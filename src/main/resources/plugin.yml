@@ -1,0 +1,4 @@
+name: LanguageBridge
+version: '${version}'
+main: me.astroreen.languagebridge.LanguageBridge
+api-version: '1.20'
