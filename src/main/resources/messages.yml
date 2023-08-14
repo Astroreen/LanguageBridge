@@ -1,0 +1,24 @@
+ru:
+  prefix: ""
+  version: "Версия плагина - {0}"
+  reloaded: "&aПерезагружено!"
+  no-permission: "&cУ вас не хватает прав."
+  need-to-be-player: "Вам нужно быть игроком чтобы использовать эту команду"
+  unknown-argument: "Неверные аргументы: {0}"
+  plugin-is-disabled: "Плагин {0} отключен."
+  language:
+    current-language: "&aСейчас стоит язык \"{0}\""
+    already-language: "&aЯзык уже \"{0}\""
+    no-such-language: "&cЭтого языка ({0}) нет в файле messages.yml"
+    set-language-successfully: "&aЯзык успешно установлен на \"{0}\""
+  debug:
+    current-debug: "&2Debug прямо сейчас {0}!"
+    already-debugging: "&2Debug режим уже {0}!"
+    set-debug-successfully: "&aDebug режим был успешно {0}"
+    set-debug-error: "&cНе удалось сохранить новый параметр debug в файл конфигурации!"
+  variables:
+    self: "себе"
+    enabled: "включен"
+    disabled: "отключен"
+    set: "поставили"
+    add: "добавили"
