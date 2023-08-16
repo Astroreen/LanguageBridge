@@ -17,8 +17,8 @@ import me.astroreen.languagebridge.module.logger.DebugHandlerConfig;
 import me.astroreen.languagebridge.module.permissions.DefaultPermissionManager;
 import me.astroreen.languagebridge.module.permissions.Permission;
 import me.astroreen.languagebridge.module.permissions.PermissionManager;
+import me.astroreen.languagebridge.module.placeholder.PlaceholderManager;
 import me.astroreen.languagebridge.utils.StartScreen;
-import me.clip.placeholderapi.libs.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -32,20 +32,32 @@ import java.util.logging.Level;
 
 public final class LanguageBridge extends JavaPlugin {
     /**
-     * The Bridge Plugin instance.
-     * <p>
-     * -- GETTER --
-     * <p>
      * Get the plugin's instance.
+     *
+     * @return {@link LanguageBridge}'s instance.
      */
     @Getter
     public static LanguageBridge instance;
     private BRLogger log;
     private ConfigurationFile config;
+    /**
+     * Returns the database instance
+     *
+     * @return {@link Database}'s instance
+     */
+    @Getter
     private Database database;
     private AsyncSaver saver;
+    /**
+     * Returns the permission manager
+     *
+     * @return {@link DefaultPermissionManager} instance
+     */
+    @Getter
     private static PermissionManager permManager;
     private boolean isMySQLUsed;
+    @Getter
+    private PlaceholderManager placeholderManager;
 
     @NotNull
     public ConfigurationFile getPluginConfig() {
@@ -72,13 +84,13 @@ public final class LanguageBridge extends JavaPlugin {
         DebugHandlerConfig.setup(config);
 
         // Initialize
-        ListenerManager.setup(this);//listeners
-        new Compatibility();        //compatibility with other plugins
-        Config.setup(this);         //messages
-                                    //permission manager
-        permManager = Compatibility.getHooked().contains(CompatiblePlugin.LUCKPERMS) ?
+        ListenerManager.setup(this);                                                    //listeners
+        new Compatibility();                                                            //compatibility with other plugins
+        Config.setup(this);                                                             //messages
+        permManager = Compatibility.getHooked().contains(CompatiblePlugin.LUCKPERMS) ?  //permission manager
                 LPPermissionManager.getInstance() : new DefaultPermissionManager();
-        new LanguageBridgeCommand();//commands
+        placeholderManager = new PlaceholderManager(this);                        //placeholder manager
+        new LanguageBridgeCommand();                                                    //commands
         //todo: make command to select different language (f.e. /language)
 
         // connect to database
@@ -142,24 +154,6 @@ public final class LanguageBridge extends JavaPlugin {
 
         // done
         log.info("Bridge successfully disabled!");
-    }
-
-    /**
-     * Returns the permission manager
-     *
-     * @return {@link DefaultPermissionManager} instance
-     */
-    public PermissionManager getPermissionManager() {
-        return permManager;
-    }
-
-    /**
-     * Returns the database instance
-     *
-     * @return {@link Database} instance
-     */
-    public Database getDatabase() {
-        return database;
     }
 
     private void openDatabaseConnection() {

@@ -61,9 +61,6 @@ public abstract class Database {
                     .executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "language (id INTEGER PRIMARY KEY "
                             + autoIncrement + ", playerID VARCHAR(256) NOT NULL, language VARCHAR(25) "
                             + "NOT NULL DEFAULT " + defaultLanguage + ");");
-            getConnection().createStatement()
-                    .executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "placeholders ("
-                            + "key VARCHAR(256) NOT NULL, value VARCHAR(256) NOT NULL);");
         } catch (final SQLException e) {
             LOG.error("There was an exception with SQL", e);
         }

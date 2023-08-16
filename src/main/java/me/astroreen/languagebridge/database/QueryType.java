@@ -6,7 +6,10 @@ import java.util.function.Function;
  * Type of the query.
  */
 public enum QueryType {
-
+    /**
+     * UUID.
+     */
+    SELECT_PLAYER_LANGUAGE(prefix -> "SELECT language FROM " + prefix + "nickname WHERE playerID = ?;"),
     ;
 
     /**

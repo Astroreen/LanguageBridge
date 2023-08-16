@@ -1,3 +1,4 @@
+config-version: ''
 en:
   prefix: ''
   version: '&#6ffc03Plugin version - &#a1ff59{0}.'
@@ -16,7 +17,7 @@ en:
   debug:
     current-debug: '&#6ffc03Debug mode {0}.'
     already-debugging: '&#f09c0bDebug mode is already set to {0}!'
-    set-debug-successfully: '&#6ffc03Debug mode successfully set to ''{0}''.'
+    set-debug-successfully: '&#6ffc03Debug mode successfully set to {0}.'
     set-debug-error: '&d82625Failed to save new debug option to config file!'
   variable:
     enabled: enabled

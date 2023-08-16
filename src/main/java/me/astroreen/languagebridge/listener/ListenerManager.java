@@ -3,6 +3,7 @@ package me.astroreen.languagebridge.listener;
 import lombok.CustomLog;
 import me.astroreen.languagebridge.LanguageBridge;
 import org.bukkit.Bukkit;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
@@ -15,10 +16,21 @@ public class ListenerManager {
 
     private static LanguageBridge plugin;
     private static final HashMap<String, Listener> registered = new HashMap<>();
+    private static EventPriority priority = EventPriority.LOWEST;
 
-
+    //todo: create listeners to translate native placeholders
+    //for books, anvils, chat, nicknames(tags), boss bar, tab list, titles
     public static void setup(final @NotNull LanguageBridge plugin) {
         ListenerManager.plugin = plugin;
+
+        //update priority for events
+        final String eventPriority = plugin.getPluginConfig().getString("settings.event-priority", "LOWEST");
+        try {
+            ListenerManager.priority = EventPriority.valueOf(eventPriority);
+        } catch (IllegalArgumentException e) {
+            ListenerManager.priority = EventPriority.LOWEST;
+            LOG.error("Could not set value from config (" + eventPriority + ") as event priority. Set to 'LOWEST' as default");
+        }
 
         //registering default listeners
         //empty for now

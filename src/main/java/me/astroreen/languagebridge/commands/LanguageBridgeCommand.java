@@ -116,7 +116,7 @@ public class LanguageBridgeCommand implements CommandExecutor, SimpleTabComplete
 
     private @NotNull Optional<List<String>> completeLanguage(final String @NotNull ... args) {
         if (args.length == 2) {
-            return Optional.of(Config.getLanguages());
+            return Optional.of(Config.getLanguages().stream().toList());
         }
         return Optional.of(Collections.emptyList());
     }

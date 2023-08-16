@@ -6,6 +6,7 @@ import me.astroreen.languagebridge.compatibility.Compatibility;
 import me.astroreen.languagebridge.compatibility.CompatiblePlugin;
 import me.astroreen.languagebridge.module.config.ConfigAccessor;
 import me.astroreen.languagebridge.module.config.ConfigurationFile;
+import me.astroreen.languagebridge.module.placeholder.PlaceholderManager;
 import me.astroreen.languagebridge.utils.ColorCodes;
 import lombok.CustomLog;
 import me.clip.placeholderapi.PlaceholderAPI;
@@ -18,12 +19,15 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @CustomLog
 public class Config {
-    private static final List<String> LANGUAGES = new ArrayList<>();
+    private static final Set<String> LANGUAGES = new HashSet<>();
     private static LanguageBridge plugin;
     private static ConfigurationFile messages = null;
     private static ConfigAccessor internal = null;
@@ -46,13 +50,49 @@ public class Config {
             return;
         }
 
-        Config.lang = plugin.getPluginConfig().getString("settings.default-language");
-        for (final String key : messages.getKeys(false)) {
-            if (key.equals("global") || key.equals("config-version")) continue;
-            LOG.debug("Loaded '" + key + "' language");
-            LANGUAGES.add(key);
+        final ConfigurationFile config = plugin.getPluginConfig();
+        final String lang = config.getString("settings.default-language");
+        final List<String> languages = config.getStringList("settings.languages");
+
+        //default language
+        if(languages.contains(lang)) Config.lang = lang;
+        else Config.lang = "en";
+
+        for(final String key : languages){
+            //create new file for storing languages keys
+            try {
+                final ConfigAccessor accessor;
+                final ConfigAccessor resourceAccessor;
+                accessor = ConfigAccessor.create(new File(root, key + "-messages.yml"), plugin, "language-messages-template.yml");
+                resourceAccessor = ConfigAccessor.create(plugin, "language-messages-template.yml");
+
+                accessor.getConfig().setDefaults(resourceAccessor.getConfig());
+                accessor.getConfig().options().copyDefaults(true);
+                try {
+                    accessor.save();
+                } catch (final IOException e) {
+                    throw new InvalidConfigurationException("Default values were applied to the config but could not be saved! Reason: " + e.getMessage(), e);
+                }
+            } catch (InvalidConfigurationException | FileNotFoundException e) {
+                LOG.error(e.getMessage(), e);
+            }
+
+            //if plugin-messages.yml contain language, will not create template
+            if(messages.getKeys(false).contains(key)) continue;
+
+            //generate templates for new language
+            messages.set(key, internal.getConfig().getConfigurationSection("en"));
+            try {
+                messages.save();
+            } catch (IOException e) {
+                LOG.error("Could not save changes to plugin-messages.yml.");
+            }
         }
-        Config.prefix = getMessage(lang, MessageType.PREFIX);
+
+        LANGUAGES.addAll(languages);
+        LOG.debug("Loaded '" + LANGUAGES.toString().substring(1, LANGUAGES.toString().length() - 1) + "' languages.");
+
+        Config.prefix = getMessage(Config.lang, MessageType.PREFIX);
     }
 
     /**
@@ -127,7 +167,7 @@ public class Config {
         if (lang == null) lang = getLanguage();
 
         String result = messages.getString(lang + "." + message.path);
-        if (result == null) {
+        if (result == null || result.equals("")) {
             result = messages.getString("en." + message.path);
         }
         if (result == null) {
@@ -214,7 +254,10 @@ public class Config {
      * @return The parsed message as Kyori {@link TextComponent}
      */
     public static @NotNull TextComponent parseText(final @NotNull Player player, final @NotNull String msg) {
-        if(!Compatibility.getHooked().contains(CompatiblePlugin.PLACEHOLDERAPI)) return parseText(msg);
+        if(!Compatibility.getHooked().contains(CompatiblePlugin.PLACEHOLDERAPI)) {
+            final PlaceholderManager placeholderManager = plugin.getPlaceholderManager();
+            return placeholderManager.translate(player, msg);
+        }
         return ColorCodes.translateToTextComponent(PlaceholderAPI.setPlaceholders(player, prefix + msg));
     }
 
@@ -271,7 +314,7 @@ public class Config {
     /**
      * @return the languages defined in plugin-messages.yml
      */
-    public static List<String> getLanguages() {
+    public static Set<String> getLanguages() {
         return LANGUAGES;
     }
 

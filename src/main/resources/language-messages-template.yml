@@ -1,0 +1,20 @@
+#This is a template that stores keys and values.
+#These values you can get using placeholders (it also works with PlaceholderAPI).
+#Placeholders look like in PlaceholderAPI: %lngbr_<key>% -> %lngbr_another.directory.subdirectory.key1%
+#They will translate this key in placeholder into the player's chosen language value.
+#Values can be colored using minecraft colors (&a) or hex colors (&#FFFFFF).
+#
+#You can write keys as you wish (you can see examples below).
+#
+#another.directory.subdirectory.key1: value1
+#somedir.directory:
+#  randomkey: randomvalue
+#directory:
+#  subdirectory:
+#    key2: value2
+#    key3: value3
+#    key4: value4
+#    randomdirectory:
+#      randomsubdirectory:
+#        key5: value5
+key: value
