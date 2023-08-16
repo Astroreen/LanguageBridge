@@ -1,0 +1,46 @@
+en:
+  prefix: ''
+  version: '&#6ffc03Plugin version - &#a1ff59{0}.'
+  reloaded: '&#6ffc03Reloaded!'
+  no-permission: '&d82625You don''t have right permissions.'
+  need-to-be-player: '&d82625You have to be a player to use this command.'
+  unknown-arguments: '&#f09c0bUnknown arguments: {0}'
+  plugin-is-disabled: '&d82625Plugin {0} is disabled.'
+  language:
+    current-language: '&#6ffc03Right now, language is "{0}"'
+    already-language: '&#f09c0bThe language is already set to "{0}".'
+    no-such-language: '&#f09c0bNo such language ({0}) in file ''plugin-messages.yml''.'
+    set-language-successfully: '&#6ffc03Language successfully set to "{0}"!'
+    set-language-error: '&d82625Failed to save new default language option to config
+      file!'
+  debug:
+    current-debug: '&#6ffc03Debug mode {0}.'
+    already-debugging: '&#f09c0bDebug mode is already set to {0}!'
+    set-debug-successfully: '&#6ffc03Debug mode successfully set to ''{0}''.'
+    set-debug-error: '&d82625Failed to save new debug option to config file!'
+  variable:
+    enabled: enabled
+    disabled: disabled
+ru:
+  prefix: ''
+  version: '&#6ffc03Версия плагина - &#a1ff59{0}.'
+  reloaded: '&#6ffc03Перезагружено!'
+  no-permission: '&d82625У вас не хватает прав.'
+  need-to-be-player: '&d82625Вам нужно быть игроком чтобы использовать эту команду.'
+  unknown-arguments: '&#f09c0bНеверные аргументы: {0}'
+  plugin-is-disabled: '&d82625Плагин {0} отключен.'
+  language:
+    current-language: '&#6ffc03Сейчас стоит язык "{0}"'
+    already-language: '&#f09c0bЯзык уже поставлен на "{0}".'
+    no-such-language: '&#f09c0bЭтого языка ({0}) нет в файле plugin-messages.yml.'
+    set-language-successfully: '&#6ffc03Язык успешно установлен на "{0}"!'
+    set-language-error: '&d82625Не удалось сохранить новый параметр языка по умолчанию
+      в файл конфигурации!'
+  debug:
+    current-debug: '&#6ffc03Debug режим, в данный момент, {0}.'
+    already-debugging: '&#f09c0bDebug режим уже {0}!'
+    set-debug-successfully: '&#6ffc03Debug режим был успешно {0}.'
+    set-debug-error: '&d82625Не удалось сохранить новый параметр debug в файл конфигурации!'
+  variable:
+    enabled: включен
+    disabled: отключен

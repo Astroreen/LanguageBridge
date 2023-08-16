@@ -2,13 +2,14 @@ package me.astroreen.languagebridge.config;
 
 import me.astroreen.languagebridge.LanguageBridge;
 import me.astroreen.languagebridge.MessageType;
+import me.astroreen.languagebridge.compatibility.Compatibility;
+import me.astroreen.languagebridge.compatibility.CompatiblePlugin;
 import me.astroreen.languagebridge.module.config.ConfigAccessor;
 import me.astroreen.languagebridge.module.config.ConfigurationFile;
 import me.astroreen.languagebridge.utils.ColorCodes;
 import lombok.CustomLog;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.kyori.adventure.text.TextComponent;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.entity.Player;
@@ -24,10 +25,10 @@ import java.util.List;
 public class Config {
     private static final List<String> LANGUAGES = new ArrayList<>();
     private static LanguageBridge plugin;
-    private static ConfigurationFile messages;
-    private static ConfigAccessor internal;
-    private static String lang;
-    private static String prefix;
+    private static ConfigurationFile messages = null;
+    private static ConfigAccessor internal = null;
+    private static String lang = null;
+    private static String prefix = "";
 
     private Config() {
     }
@@ -38,19 +39,18 @@ public class Config {
 
         final File root = plugin.getDataFolder();
         try {
-            Config.messages = ConfigurationFile.create(new File(root, "messages.yml"), plugin, "messages.yml");
-            Config.internal = ConfigAccessor.create(plugin, "messages-internal.yml");
+            Config.messages = ConfigurationFile.create(new File(root, "plugin-messages.yml"), plugin, "plugin-messages.yml");
+            Config.internal = ConfigAccessor.create(plugin, "plugin-messages-internal.yml");
         } catch (final InvalidConfigurationException | FileNotFoundException e) {
             LOG.warn(e.getMessage(), e);
             return;
         }
 
-        Config.lang = plugin.getPluginConfig().getString("settings.language");
+        Config.lang = plugin.getPluginConfig().getString("settings.default-language");
         for (final String key : messages.getKeys(false)) {
-            if (!"global".equals(key)) {
-                LOG.debug("Loaded " + key + " language");
-                LANGUAGES.add(key);
-            }
+            if (key.equals("global") || key.equals("config-version")) continue;
+            LOG.debug("Loaded '" + key + "' language");
+            LANGUAGES.add(key);
         }
         Config.prefix = getMessage(lang, MessageType.PREFIX);
     }
@@ -67,13 +67,13 @@ public class Config {
             return null;
         }
         final String[] parts = address.split("\\.");
-        if (parts.length < 2) {
+        if (parts.length < 2) { //{language}.{key}
             return null;
         }
         final String main = parts[0];
-        if ("config".equals(main)) {
+        if (main.equals("config")) {
             return plugin.getPluginConfig().getString(address.substring(7));
-        } else if ("messages".equals(main)) {
+        } else if (main.equals("messages")) {
             return messages.getString(address.substring(9));
         }
         return null;
@@ -109,7 +109,7 @@ public class Config {
      * @return message in that language, or message in English, or null if it
      * does not exist
      */
-    public static @NotNull String getMessage(final @NotNull String lang, final @NotNull MessageType message) {
+    public static @NotNull String getMessage(final String lang, final @NotNull MessageType message) {
         return getMessage(lang, message, (String[]) null);
     }
 
@@ -136,16 +136,17 @@ public class Config {
         if (result == null) {
             result = internal.getConfig().getString("en." + message.path);
         }
-        if (result != null) {
-            if (variables != null) {
-                for (int i = 0; i < variables.length; i++) {
-                    result = result.replace("{" + i + "}", variables[i]);
-                }
-            }
-            return result;
+        if (result == null) {
+            LOG.warn("Message was not found");
+            return "";
         }
-        LOG.warn("Message was not found");
-        return "";
+
+        if (variables != null) {
+            for (int i = 0; i < variables.length; i++) {
+                result = result.replace("{" + i + "}", variables[i]);
+            }
+        }
+        return result;
     }
 
     /**
@@ -170,7 +171,11 @@ public class Config {
      * @param variables array of variables which will be inserted into the string
      */
     public static void sendMessage(final Player player, final @NotNull MessageType msg, final String... variables) {
-        sendMessage(player, msg, null, variables);
+        sendMessage(player, null, msg, variables);
+    }
+
+    public static void sendMessage(final Player player, final String lang, final @NotNull MessageType msg, final String... variables){
+        sendMessage(player, lang, msg, null, variables);
     }
 
     /**
@@ -183,10 +188,12 @@ public class Config {
      * @param variables array of variables which will be inserted into the message
      * @param sound     color of the sound to play to the player
      */
-    public static void sendMessage(final Player player, final @NotNull MessageType msg, final ConfigSound sound, final String... variables) {
+    public static void sendMessage(final Player player, String lang, final @NotNull MessageType msg, final ConfigSound sound, final String... variables) {
         if (player == null) return;
 
-        player.sendMessage(parseMessage(player, getMessage(msg, variables)));
+        if(lang == null || !getLanguages().contains(lang)) lang = getLanguage();
+
+        player.sendMessage(parseText(player, getMessage(lang, msg, variables)));
         if (sound != null) playSound(player, sound);
     }
 
@@ -196,7 +203,7 @@ public class Config {
      *
      * @return The parsed message as Kyori {@link TextComponent}
      */
-    public static @NotNull TextComponent parseMessage(final @NotNull String msg) {
+    public static @NotNull TextComponent parseText(final @NotNull String msg) {
         return ColorCodes.translateToTextComponent(prefix + msg);
     }
 
@@ -206,17 +213,8 @@ public class Config {
      * @param player an {@link Player}
      * @return The parsed message as Kyori {@link TextComponent}
      */
-    public static @NotNull TextComponent parseMessage(final @NotNull Player player, final @NotNull String msg) {
-        return ColorCodes.translateToTextComponent(PlaceholderAPI.setPlaceholders(player, prefix + msg));
-    }
-
-    /**
-     * Retrieve's a message, replacing variables
-     *
-     * @param player an {@link OfflinePlayer}
-     * @return The parsed message as Kyori {@link TextComponent}
-     */
-    public static @NotNull TextComponent parseMessage(final @NotNull OfflinePlayer player, final @NotNull String msg) {
+    public static @NotNull TextComponent parseText(final @NotNull Player player, final @NotNull String msg) {
+        if(!Compatibility.getHooked().contains(CompatiblePlugin.PLACEHOLDERAPI)) return parseText(msg);
         return ColorCodes.translateToTextComponent(PlaceholderAPI.setPlaceholders(player, prefix + msg));
     }
 
@@ -233,20 +231,21 @@ public class Config {
             return;
         }
         final String rawSound = plugin.getPluginConfig().getString(soundType.path);
-        if (rawSound != null) {
+        if (rawSound == null) {
+            return;
+        }
             final String[] sound = rawSound.split(" ", 3);
             if (sound.length != 3) {
                 LOG.error("Sound in the config used wrong: " + rawSound);
                 return;
             }
-            if (!"false".equalsIgnoreCase(sound[0])) {
+            if (!sound[0].equalsIgnoreCase("false")) {
                 try {
                     player.playSound(player.getLocation(), Sound.valueOf(sound[0]), Float.parseFloat(sound[1]), Float.parseFloat(sound[2]));
                 } catch (final IllegalArgumentException e) {
                     LOG.warn("Unknown sound type: " + rawSound, e);
                 }
             }
-        }
     }
 
     /**
@@ -256,8 +255,8 @@ public class Config {
         return messages;
     }
 
-    public static void setLanguage (String lang) throws IllegalArgumentException{
-        if(LANGUAGES.contains(lang)){
+    public static void setLanguage(String lang) throws IllegalArgumentException {
+        if (LANGUAGES.contains(lang)) {
             Config.lang = lang;
         } else throw new IllegalArgumentException();
     }
@@ -266,11 +265,11 @@ public class Config {
      * @return the default language
      */
     public static String getLanguage() {
-        return lang;
+        return Config.lang;
     }
 
     /**
-     * @return the languages defined in messages.yml
+     * @return the languages defined in plugin-messages.yml
      */
     public static List<String> getLanguages() {
         return LANGUAGES;

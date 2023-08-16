@@ -1,0 +1,25 @@
+hook:
+  placeholderapi: true
+  tab: true
+  luckperms: true
+  fastasyncworldedit: true
+  itemsadder: true
+  protocollib: true
+
+settings:
+  default-language: en
+
+#MySQL. If the connection data is entered incorrectly,
+# then the data will be written to the local database.
+mysql:
+  enabled: false
+  updateTime: 30 #минут
+  prefix: 'lngbr_'
+  host: ''
+  port: ''
+  database: ''
+  user: ''
+  password: ''
+
+debug: false
+config-version: ""

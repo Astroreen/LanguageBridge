@@ -2,15 +2,12 @@ package me.astroreen.languagebridge.listener;
 
 import lombok.CustomLog;
 import me.astroreen.languagebridge.LanguageBridge;
-import me.astroreen.languagebridge.version.ClassFinder;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Set;
 
 @CustomLog
@@ -23,19 +20,8 @@ public class ListenerManager {
     public static void setup(final @NotNull LanguageBridge plugin) {
         ListenerManager.plugin = plugin;
 
-        //todo: check
         //registering default listeners
-        final Set<Class> listeners = new ClassFinder().findAllClasses(ListenerManager.class.getPackageName());
-        listeners.remove(ListenerManager.class);
-        listeners.forEach(event -> {
-            final String[] rawName = event.getName().split("\\.");
-            final String name = rawName[rawName.length - 1];
-            try {
-                register(name, (Listener) event.getDeclaredConstructor().newInstance());
-            } catch (Exception e) {
-                LOG.error(String.format("Could not register listener '%s'!", name), e);
-            }
-        });
+        //empty for now
 
         //broadcasting registered listeners on start
         new BukkitRunnable() {

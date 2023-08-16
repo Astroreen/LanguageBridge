@@ -22,7 +22,7 @@ public class Patcher {
     /**
      * The comment at the version entry in the config.
      */
-    private static final String VERSION_CONFIG_COMMENT = "Не трогайте! Плагин автоматически будет обновлять этот файл.";
+    private static final String VERSION_CONFIG_COMMENT = "Do not touch! Plugin will update this value automatically.";
     /**
      * The path to the config's version in the config.
      */

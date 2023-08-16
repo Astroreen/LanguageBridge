@@ -46,10 +46,10 @@ public class DebugHandlerConfig {
      * @throws IOException when persisting the changed state fails
      */
     public static void setDebugging(final boolean debug) throws IOException {
-        if (config.getBoolean(CONFIG_ENABLED_PATH) != debug) {
-            config.set(CONFIG_ENABLED_PATH, debug);
-            config.save();
-            DEBUGGING = debug;
-        }
+        if (config.getBoolean(CONFIG_ENABLED_PATH) == debug) return;
+
+        DEBUGGING = debug;
+        config.set(CONFIG_ENABLED_PATH, debug);
+        config.save();
     }
 }

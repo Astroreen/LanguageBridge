@@ -1,7 +1,19 @@
 name: LanguageBridge
+author: Astroreen
 version: '${version}'
 main: me.astroreen.languagebridge.LanguageBridge
 api-version: '1.20'
 softdepend:
   - LuckPerms
   - PlaceholderAPI
+
+commands:
+  languagebridge:
+    description: Main command
+    permission: languagebridge.command.languagebridge
+    aliases:
+      - languagebr
+      - lngbridge
+      - lngbr
+      - lngbr
+      - lnbr

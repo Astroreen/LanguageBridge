@@ -26,8 +26,8 @@ public class TopicLogger extends Logger {
         setParent(parentLogger);
         setLevel(Level.ALL);
         //color of ID
-        final String ID = Ansi.ansi().fg(Ansi.Color.CYAN) + "[BR] " +  Ansi.ansi().fg(Ansi.Color.DEFAULT);
-        this.topic = topic == null ? ID : ID + Ansi.ansi().fg(Ansi.Color.GREEN) + "(" + topic + ") " +  Ansi.ansi().fg(Ansi.Color.DEFAULT);
+        //final String ID = Ansi.ansi().fg(Ansi.Color.CYAN) + "[BR] " +  Ansi.ansi().fg(Ansi.Color.DEFAULT);
+        this.topic = topic == null ? "" : Ansi.ansi().fg(Ansi.Color.GREEN) + "(" + topic + ") " +  Ansi.ansi().fg(Ansi.Color.DEFAULT);
     }
 
     /**
