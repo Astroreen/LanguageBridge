@@ -3,6 +3,8 @@ author: Astroreen
 version: '${version}'
 main: me.astroreen.languagebridge.LanguageBridge
 api-version: '1.20'
+depend:
+  - AstroLibs
 softdepend:
   - LuckPerms
   - PlaceholderAPI

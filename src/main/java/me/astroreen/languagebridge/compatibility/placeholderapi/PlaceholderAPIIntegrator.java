@@ -1,6 +1,6 @@
 package me.astroreen.languagebridge.compatibility.placeholderapi;
 
-import me.astroreen.languagebridge.compatibility.Integrator;
+import me.astroreen.astrolibs.compatibility.Integrator;
 
 public class PlaceholderAPIIntegrator implements Integrator {
 

@@ -1,11 +1,12 @@
 package me.astroreen.languagebridge.commands;
 
 import lombok.CustomLog;
+import me.astroreen.astrolibs.api.bukkit.command.SimpleTabCompleter;
+import me.astroreen.astrolibs.api.config.ConfigurationFile;
+import me.astroreen.astrolibs.module.logger.DebugHandlerConfig;
 import me.astroreen.languagebridge.LanguageBridge;
 import me.astroreen.languagebridge.MessageType;
 import me.astroreen.languagebridge.config.Config;
-import me.astroreen.languagebridge.module.config.ConfigurationFile;
-import me.astroreen.languagebridge.module.logger.DebugHandlerConfig;
 import me.astroreen.languagebridge.module.permissions.Permission;
 import me.astroreen.languagebridge.module.permissions.PermissionManager;
 import org.bukkit.command.Command;
@@ -25,7 +26,7 @@ public class LanguageBridgeCommand implements CommandExecutor, SimpleTabComplete
     //todo: make help command and hints for usage
 
     private static final LanguageBridge instance = LanguageBridge.getInstance();
-    private static final PermissionManager permManager = instance.getPermissionManager();
+    private static final PermissionManager permManager = LanguageBridge.getPermissionManager();
 
     public LanguageBridgeCommand() {
         final PluginCommand command = instance.getCommand("languagebridge");
@@ -38,7 +39,7 @@ public class LanguageBridgeCommand implements CommandExecutor, SimpleTabComplete
     @Override
     public boolean onCommand(final @NotNull CommandSender sender, final @NotNull Command cmd, final @NotNull String label, final @NotNull String[] args) {
         if ("languagebridge".equalsIgnoreCase(cmd.getName())) {
-            LOG.debug("Executing /bridge command for user " + sender.getName()
+            LOG.debug("Executing /" + cmd.getName() + " command for user " + sender.getName()
                     + " with arguments: " + Arrays.toString(args));
             // if the command is empty, display help message
             if (args.length == 0) return true;

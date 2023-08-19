@@ -1,13 +1,13 @@
 package me.astroreen.languagebridge.config;
 
+import me.astroreen.astrolibs.api.config.ConfigAccessor;
+import me.astroreen.astrolibs.api.config.ConfigurationFile;
+import me.astroreen.astrolibs.compatibility.Compatibility;
+import me.astroreen.astrolibs.compatibility.CompatiblePlugin;
+import me.astroreen.astrolibs.utils.ColorCodes;
 import me.astroreen.languagebridge.LanguageBridge;
 import me.astroreen.languagebridge.MessageType;
-import me.astroreen.languagebridge.compatibility.Compatibility;
-import me.astroreen.languagebridge.compatibility.CompatiblePlugin;
-import me.astroreen.languagebridge.module.config.ConfigAccessor;
-import me.astroreen.languagebridge.module.config.ConfigurationFile;
 import me.astroreen.languagebridge.module.placeholder.PlaceholderManager;
-import me.astroreen.languagebridge.utils.ColorCodes;
 import lombok.CustomLog;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.kyori.adventure.text.TextComponent;
@@ -20,7 +20,6 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;

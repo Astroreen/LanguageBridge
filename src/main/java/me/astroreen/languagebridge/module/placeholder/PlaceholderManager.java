@@ -1,12 +1,12 @@
 package me.astroreen.languagebridge.module.placeholder;
 
 import lombok.CustomLog;
+import me.astroreen.astrolibs.api.config.ConfigAccessor;
+import me.astroreen.astrolibs.api.config.ConfigurationFile;
 import me.astroreen.languagebridge.LanguageBridge;
 import me.astroreen.languagebridge.config.Config;
 import me.astroreen.languagebridge.database.Connector;
 import me.astroreen.languagebridge.database.QueryType;
-import me.astroreen.languagebridge.module.config.ConfigAccessor;
-import me.astroreen.languagebridge.module.config.ConfigurationFile;
 import net.kyori.adventure.text.TextComponent;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.entity.Player;

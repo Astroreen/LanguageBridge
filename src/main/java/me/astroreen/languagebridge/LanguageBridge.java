@@ -1,24 +1,27 @@
 package me.astroreen.languagebridge;
 
 import lombok.Getter;
+import me.astroreen.astrolibs.api.config.ConfigurationFile;
+import me.astroreen.astrolibs.api.logger.Logger;
+import me.astroreen.astrolibs.api.logger.LoggerFactory;
+import me.astroreen.astrolibs.compatibility.Compatibility;
+import me.astroreen.astrolibs.compatibility.CompatiblePlugin;
+import me.astroreen.astrolibs.compatibility.Integrator;
+import me.astroreen.astrolibs.listener.ListenerManager;
+import me.astroreen.astrolibs.module.logger.DebugHandlerConfig;
 import me.astroreen.languagebridge.commands.LanguageBridgeCommand;
-import me.astroreen.languagebridge.compatibility.Compatibility;
-import me.astroreen.languagebridge.compatibility.CompatiblePlugin;
+import me.astroreen.languagebridge.compatibility.luckperms.BRLuckPermsIntegrator;
 import me.astroreen.languagebridge.compatibility.luckperms.LPPermissionManager;
+import me.astroreen.languagebridge.compatibility.placeholderapi.PlaceholderAPIIntegrator;
 import me.astroreen.languagebridge.config.Config;
 import me.astroreen.languagebridge.database.AsyncSaver;
 import me.astroreen.languagebridge.database.Database;
 import me.astroreen.languagebridge.database.MySQL;
 import me.astroreen.languagebridge.database.SQLite;
-import me.astroreen.languagebridge.listener.ListenerManager;
-import me.astroreen.languagebridge.module.config.ConfigurationFile;
-import me.astroreen.languagebridge.module.logger.BRLogger;
-import me.astroreen.languagebridge.module.logger.DebugHandlerConfig;
 import me.astroreen.languagebridge.module.permissions.DefaultPermissionManager;
 import me.astroreen.languagebridge.module.permissions.Permission;
 import me.astroreen.languagebridge.module.permissions.PermissionManager;
 import me.astroreen.languagebridge.module.placeholder.PlaceholderManager;
-import me.astroreen.languagebridge.utils.StartScreen;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -28,6 +31,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 
 public final class LanguageBridge extends JavaPlugin {
@@ -38,7 +43,7 @@ public final class LanguageBridge extends JavaPlugin {
      */
     @Getter
     public static LanguageBridge instance;
-    private BRLogger log;
+    private Logger log;
     private ConfigurationFile config;
     /**
      * Returns the database instance
@@ -54,7 +59,7 @@ public final class LanguageBridge extends JavaPlugin {
      * @return {@link DefaultPermissionManager} instance
      */
     @Getter
-    private static PermissionManager permManager;
+    private static PermissionManager permissionManager;
     private boolean isMySQLUsed;
     @Getter
     private PlaceholderManager placeholderManager;
@@ -68,7 +73,7 @@ public final class LanguageBridge extends JavaPlugin {
     public void onEnable() {
         // Plugin startup logic
         instance = this; //when plugin is available for use
-        log = BRLogger.create(this);
+        log = LoggerFactory.create(this);
 
         // Set up permissions
         for (Permission permission : Permission.values())
@@ -83,18 +88,21 @@ public final class LanguageBridge extends JavaPlugin {
         }
         DebugHandlerConfig.setup(config);
 
+        // connect to database
+        openDatabaseConnection();
+
         // Initialize
-        ListenerManager.setup(this);                                                    //listeners
-        new Compatibility();                                                            //compatibility with other plugins
+        //todo: create listeners to translate native placeholders
+        //for books, anvils, chat, nicknames(tags), boss bar, tab list, titles
+        ListenerManager.setup(this, null, log);                            //listeners
+        new Compatibility(this, getIntegrators(), config, log);                   //compatibility with other plugins
         Config.setup(this);                                                             //messages
-        permManager = Compatibility.getHooked().contains(CompatiblePlugin.LUCKPERMS) ?  //permission manager
+        permissionManager = Compatibility.getHooked()                                   //permission manager
+                .contains(CompatiblePlugin.LUCKPERMS) ?
                 LPPermissionManager.getInstance() : new DefaultPermissionManager();
         placeholderManager = new PlaceholderManager(this);                        //placeholder manager
         new LanguageBridgeCommand();                                                    //commands
         //todo: make command to select different language (f.e. /language)
-
-        // connect to database
-        openDatabaseConnection();
 
         // create tables in the database
         database.createTables(isMySQLUsed);
@@ -108,15 +116,15 @@ public final class LanguageBridge extends JavaPlugin {
 
         // Done!
         new StartScreen(this.getServer().getConsoleSender()).BridgeImage();
-        log.info("Bridge successfully enabled!");
+        log.info("LanguageBridge successfully enabled!");
 
         //refreshing db connection
-        final long updateTime = config.getLong("mysql.updateTime", 30) * 1200; //minutes
+        final long updateTime = 30 * 1200; //minutes
         final Runnable runnable = () -> {
             try {
                 database.getConnection().prepareStatement("SELECT 1").executeQuery().close();
             } catch (final SQLException e) {
-                log.warn("Refreshing the database...", e);
+                log.error("Could not refresh the database! Is connection lost?", e);
             }
         };
         Bukkit.getScheduler().runTaskTimerAsynchronously(this, runnable, updateTime, updateTime);
@@ -133,7 +141,7 @@ public final class LanguageBridge extends JavaPlugin {
         Config.setup(this);
         DebugHandlerConfig.setup(config);
         Compatibility.reload();
-        permManager = Compatibility.getHooked().contains(CompatiblePlugin.LUCKPERMS) ?
+        permissionManager = Compatibility.getHooked().contains(CompatiblePlugin.LUCKPERMS) ?
                 LPPermissionManager.getInstance() : new DefaultPermissionManager();
 
         //updating database connection configuration
@@ -179,4 +187,15 @@ public final class LanguageBridge extends JavaPlugin {
             }
         }
     }
+
+    private Map<CompatiblePlugin, Integrator> getIntegrators() {
+        final Map<CompatiblePlugin, Integrator> integrators = new HashMap<>();
+
+        integrators.put(CompatiblePlugin.LUCKPERMS, new BRLuckPermsIntegrator());
+        integrators.put(CompatiblePlugin.PLACEHOLDERAPI, new PlaceholderAPIIntegrator());
+
+        return integrators;
+    }
+
+
 }

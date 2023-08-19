@@ -1,8 +1,8 @@
 package me.astroreen.languagebridge.module.permissions;
 
 import lombok.CustomLog;
+import me.astroreen.astrolibs.utils.PlayerConverter;
 import me.astroreen.languagebridge.LanguageBridge;
-import me.astroreen.languagebridge.utils.PlayerConverter;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 

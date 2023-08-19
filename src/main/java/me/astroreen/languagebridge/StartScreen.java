@@ -1,11 +1,10 @@
-package me.astroreen.languagebridge.utils;
+package me.astroreen.languagebridge;
 
-import me.astroreen.languagebridge.LanguageBridge;
 import lombok.CustomLog;
+import me.astroreen.languagebridge.LanguageBridge;
 import me.astroreen.languagebridge.version.VersionChecker;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
-import org.bukkit.Bukkit;
 import org.bukkit.command.ConsoleCommandSender;
 import org.jetbrains.annotations.NotNull;
 

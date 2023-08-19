@@ -1,7 +1,7 @@
 package me.astroreen.languagebridge.compatibility.luckperms;
 
+import me.astroreen.astrolibs.utils.PlayerConverter;
 import me.astroreen.languagebridge.module.permissions.PermissionManager;
-import me.astroreen.languagebridge.utils.PlayerConverter;
 import lombok.CustomLog;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.model.user.User;

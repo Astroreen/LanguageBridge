@@ -1,6 +1,6 @@
 package me.astroreen.languagebridge.module.permissions;
 
-import me.astroreen.languagebridge.utils.PlayerConverter;
+import me.astroreen.astrolibs.utils.PlayerConverter;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
