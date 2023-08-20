@@ -4,7 +4,8 @@ plugins {
 
 group = 'me.astroreen'
 
-task updateMajor {
+tasks.register('updateMajor') {
+    dependsOn 'build'
     doLast {
         def versionPropertiesFile = file('gradle.properties')
         def versionProperties = new Properties()
@@ -21,7 +22,8 @@ task updateMajor {
     }
 }
 
-task updateMinor {
+tasks.register('updateMinor') {
+    dependsOn 'build'
     doLast {
         def versionPropertiesFile = file('gradle.properties')
         def versionProperties = new Properties()
@@ -29,7 +31,8 @@ task updateMinor {
 
         def currentVersion = versionProperties.getProperty('version')
         def versionParts = currentVersion.split("\\.")
-        def newVersion = "${versionParts[0]}.${versionParts[1].toInteger() + 1}.${versionParts[2]}"
+        def buildNumber = versionParts[1].toInteger() + 1;
+        def newVersion = "${versionParts[0]}.${buildNumber.toString().padLeft(2, '0')}.${versionParts[2]}"
 
         versionProperties.setProperty('version', newVersion)
         versionProperties.store(versionPropertiesFile.newWriter(), null)
@@ -38,7 +41,8 @@ task updateMinor {
     }
 }
 
-task updatePatch {
+tasks.register('updatePatch') {
+    dependsOn 'build'
     doLast {
         def versionPropertiesFile = file('gradle.properties')
         def versionProperties = new Properties()
@@ -57,14 +61,15 @@ task updatePatch {
     }
 }
 
-task updateBuild {
+tasks.register('updateBuild') {
+    dependsOn 'build'
     doLast {
         def versionPropertiesFile = file('gradle.properties')
         def versionProperties = new Properties()
         versionProperties.load(new FileInputStream(versionPropertiesFile))
 
         def currentVersion = versionProperties.getProperty('version')
-        def versionParts = version.split("\\+build")
+        def versionParts = currentVersion.split("\\+build")
         def buildNumber = versionParts[1].toInteger() + 1
         def newVersion = "${versionParts[0]}+build${buildNumber.toString().padLeft(3, '0')}"
 
