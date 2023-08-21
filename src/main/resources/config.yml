@@ -3,13 +3,6 @@ hook:
   luckperms: true
 
 settings:
-  #Choose events priority for this plugin.
-  #This will affect if other plugin can change message.
-  #For example: if you have plugin that change messages and
-  #this options is set to LOWEST, then that plugin can overwrite these placeholder.
-  #
-  #Available options: LOWEST, LOW, NORMAL, HIGH, HIGHEST.
-  event-priority: LOWEST
   #Stores keys in memory. Attention! If you have a large files
   #with keys, this will significantly affect your RAM usage.
   store-keys-in-memory: false
@@ -20,6 +13,15 @@ settings:
     - ru
   #Language that will be set to a player by default.
   default-language: en
+  #Choose events priority for this plugin.
+  #This will affect if other plugin can change message.
+  #For example: if you have plugin that change messages and
+  #this options is set to LOWEST, then that plugin can overwrite these placeholder.
+  #
+  #Available options: LOWEST, LOW, NORMAL, HIGH, HIGHEST.
+  event-priority: LOWEST
+  check-placeholder-on:
+    rename-item-on-anvil-event: true
 
 #MySQL. If the connection data is entered incorrectly,
 #then the data will be written to the local database.

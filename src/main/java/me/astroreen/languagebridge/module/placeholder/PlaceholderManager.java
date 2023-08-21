@@ -17,7 +17,6 @@ import java.io.FileNotFoundException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,23 +38,35 @@ public class PlaceholderManager {
         reload(); // as setup
     }
 
-    public void reload(){
+    /**
+     * Reloads {@link PlaceholderManager}
+     */
+    public void reload() {
         placeholders.clear();
 
         final ConfigurationFile config = plugin.getPluginConfig();
+        if(config == null) return;
+
         this.storePlaceholders = config.getBoolean("settings.store-keys-in-memory", false);
 
-        if(storePlaceholders) uploadPlaceholdersToMemory();
+        if (storePlaceholders) uploadPlaceholdersToMemory();
     }
 
+    /**
+     * Translates all placeholders and colors in text.
+     *
+     * @param player the player for whom translating
+     * @param text   the text to translate
+     * @return {@link TextComponent}
+     */
     public TextComponent translate(final Player player, final String text) {
         //no placeholder
-        if(!hasPlaceholder(text)) return Config.parseText(text);
+        if (!hasPlaceholder(text)) return Config.parseText(text);
 
         //todo: create patterns for others placeholders values and add this as a method variable to dynamically get answer
         final Matcher matcher = PATTERN.matcher(text);
         final StringBuilder builder = new StringBuilder();
-        while(matcher.find()){
+        while (matcher.find()) {
             final String matchedText = matcher.group(1);
             final Optional<String> language = getPlayerLanguage(player.getUniqueId());
 
@@ -70,7 +81,13 @@ public class PlaceholderManager {
         return Config.parseText(builder.toString());
     }
 
-    public @NotNull Optional<String> getPlayerLanguage(final UUID uuid){
+    /**
+     * Gets player language stored in database.
+     *
+     * @param uuid the uuid of a player
+     * @return language optional
+     */
+    public @NotNull Optional<String> getPlayerLanguage(final UUID uuid) {
         try {
             final ResultSet rs = connector.querySQL(QueryType.SELECT_PLAYER_LANGUAGE, String.valueOf(uuid));
             rs.next();
@@ -81,36 +98,32 @@ public class PlaceholderManager {
         }
     }
 
-    public @NotNull Optional<String> getPlaceholderValue(final String language, final String key){
+    public @NotNull Optional<String> getPlaceholderValue(final String language, final String key) {
         //check if language is real
-        if(!Config.getLanguages().contains(language)) return Optional.empty();
+        if (!Config.getLanguages().contains(language)) return Optional.empty();
         //check if key is really a placeholder
-        if(!hasPlaceholder(key)) return Optional.empty();
+        if (!hasPlaceholder(key)) return Optional.empty();
 
         final String value;
-        if(storePlaceholders) {
+        if (storePlaceholders) {
             final Map<String, String> options = placeholders.get(key);
-            if (options == null) return Optional.empty();
-
-            value = options.get(language);
-        } else {
-            try {
-                final ConfigAccessor accessor = ConfigAccessor.create(new File(plugin.getDataFolder(), language + FILE_SUFFIX));
-                value = accessor.getConfig().getString(key);
-            } catch (InvalidConfigurationException | FileNotFoundException e) {
-                LOG.warn("Could not open '" + language + FILE_SUFFIX + "' file. Reason: " + e.getMessage(), e);
-                return Optional.empty();
-            }
+            if (options != null) return Optional.ofNullable(options.get(language));
         }
 
-        return value == null ? Optional.empty() : Optional.of(value);
+        try {
+            final ConfigAccessor accessor = ConfigAccessor.create(new File(plugin.getDataFolder(), language + FILE_SUFFIX));
+            return Optional.ofNullable(accessor.getConfig().getString(key));
+        } catch (InvalidConfigurationException | FileNotFoundException e) {
+            LOG.warn("Could not open '" + language + FILE_SUFFIX + "' file. Reason: " + e.getMessage(), e);
+            return Optional.empty();
+        }
     }
 
     public void uploadPlaceholdersToMemory() {
         final Set<String> keys = new HashSet<>();
 
-        for(final String language: Config.getLanguages()) {
-            if(!isLanguageFileExist(language)) {
+        for (final String language : Config.getLanguages()) {
+            if (!isLanguageFileExist(language)) {
                 LOG.warn("Language file '" + language + FILE_SUFFIX + "' was not found!"
                         + " Keys from this file will not be uploaded to the memory.");
                 continue;
@@ -133,20 +146,20 @@ public class PlaceholderManager {
     }
 
     private void createPlaceholders(final ConfigAccessor accessor, final Set<String> keys) {
-        if(keys == null || keys.isEmpty() || accessor == null) return;
+        if (keys == null || keys.isEmpty() || accessor == null) return;
 
         final String fileName = accessor.getConfigurationFile().getName();
         final String language = fileName.substring(0, fileName.length() - FILE_SUFFIX.length());
 
-        for(final String key : keys){
-            if(!placeholders.containsKey(key)) {
+        for (final String key : keys) {
+            if (!placeholders.containsKey(key)) {
                 LOG.warn("Key '" + key + "' was not found in '" + fileName + "' file!");
                 continue;
             }
             final String value = accessor.getConfig().getString(key);
 
             Map<String, String> options = placeholders.get(key);
-            if(options == null) {
+            if (options == null) {
                 options = new HashMap<>();
             }
 
@@ -155,13 +168,13 @@ public class PlaceholderManager {
         }
     }
 
-    public boolean hasPlaceholder(final String text){
-        if(text == null) return false;
+    public static boolean hasPlaceholder(final String text) {
+        if (text == null || text.isBlank()) return false;
         return PATTERN.matcher(text).find();
     }
 
     public boolean isLanguageFileExist(final String language) {
-        if(language == null) return false;
+        if (language == null) return false;
         return new File(plugin.getDataFolder(), language + FILE_SUFFIX).exists();
     }
 }

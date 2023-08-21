@@ -24,8 +24,9 @@ import me.astroreen.languagebridge.module.permissions.PermissionManager;
 import me.astroreen.languagebridge.module.placeholder.PlaceholderManager;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.event.EventPriority;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -42,7 +43,7 @@ public final class LanguageBridge extends JavaPlugin {
      * @return {@link LanguageBridge}'s instance.
      */
     @Getter
-    public static LanguageBridge instance;
+    private static LanguageBridge instance;
     private Logger log;
     private ConfigurationFile config;
     /**
@@ -63,9 +64,20 @@ public final class LanguageBridge extends JavaPlugin {
     private boolean isMySQLUsed;
     @Getter
     private PlaceholderManager placeholderManager;
+    /**
+     * Get event priority defined in config.
+     *
+     * @return {@link EventPriority}
+     */
+    @Getter
+    private static EventPriority eventPriority;
 
-    @NotNull
-    public ConfigurationFile getPluginConfig() {
+    /**
+     * Get main configuration file.
+     *
+     * @return {@link ConfigurationFile}
+     */
+    public @Nullable ConfigurationFile getPluginConfig() {
         return config;
     }
 
@@ -90,6 +102,9 @@ public final class LanguageBridge extends JavaPlugin {
 
         // connect to database
         openDatabaseConnection();
+
+        // event priority
+        LanguageBridge.eventPriority = reloadEventPriority();
 
         // Initialize
         //todo: create listeners to translate native placeholders
@@ -140,6 +155,7 @@ public final class LanguageBridge extends JavaPlugin {
         }
         Config.setup(this);
         DebugHandlerConfig.setup(config);
+        LanguageBridge.eventPriority = reloadEventPriority();
         Compatibility.reload();
         permissionManager = Compatibility.getHooked().contains(CompatiblePlugin.LUCKPERMS) ?
                 LPPermissionManager.getInstance() : new DefaultPermissionManager();
@@ -161,7 +177,7 @@ public final class LanguageBridge extends JavaPlugin {
         if (database != null) database.closeConnection();
 
         // done
-        log.info("Bridge successfully disabled!");
+        log.info("LanguageBridge successfully disabled!");
     }
 
     private void openDatabaseConnection() {
@@ -197,5 +213,13 @@ public final class LanguageBridge extends JavaPlugin {
         return integrators;
     }
 
-
+    private EventPriority reloadEventPriority() {
+        final String rawPriority = config.getString("settings.event-priority", "LOWEST");
+        try {
+            return EventPriority.valueOf(rawPriority);
+        } catch (IllegalArgumentException e) {
+            log.error("Config value of 'event-priority' must be defined correctly!", e);
+            return EventPriority.LOWEST;
+        }
+    }
 }

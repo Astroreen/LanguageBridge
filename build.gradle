@@ -1,84 +1,19 @@
 plugins {
     id 'java'
+    //testing plugin on server
+    id("xyz.jpenilla.run-paper") version "2.1.0"
+}
+
+tasks {
+    runServer {
+        // Configure the Minecraft version for our task.
+        // This is the only required configuration besides applying the plugin.
+        // Your plugin's jar (or shadowJar if present) will be used automatically.
+        minecraftVersion("1.20.1")
+    }
 }
 
 group = 'me.astroreen'
-
-tasks.register('updateMajor') {
-    dependsOn 'build'
-    doLast {
-        def versionPropertiesFile = file('gradle.properties')
-        def versionProperties = new Properties()
-        versionProperties.load(new FileInputStream(versionPropertiesFile))
-
-        def currentVersion = versionProperties.getProperty('version')
-        def versionParts = currentVersion.split("\\.")
-        def newVersion = "${versionParts[0].toInteger() + 1}.${versionParts[1]}.${versionParts[2]}"
-
-        versionProperties.setProperty('version', newVersion)
-        versionProperties.store(versionPropertiesFile.newWriter(), null)
-
-        println("Version was updated from $currentVersion to $newVersion")
-    }
-}
-
-tasks.register('updateMinor') {
-    dependsOn 'build'
-    doLast {
-        def versionPropertiesFile = file('gradle.properties')
-        def versionProperties = new Properties()
-        versionProperties.load(new FileInputStream(versionPropertiesFile))
-
-        def currentVersion = versionProperties.getProperty('version')
-        def versionParts = currentVersion.split("\\.")
-        def buildNumber = versionParts[1].toInteger() + 1;
-        def newVersion = "${versionParts[0]}.${buildNumber.toString().padLeft(2, '0')}.${versionParts[2]}"
-
-        versionProperties.setProperty('version', newVersion)
-        versionProperties.store(versionPropertiesFile.newWriter(), null)
-
-        println("Version was updated from $currentVersion to $newVersion")
-    }
-}
-
-tasks.register('updatePatch') {
-    dependsOn 'build'
-    doLast {
-        def versionPropertiesFile = file('gradle.properties')
-        def versionProperties = new Properties()
-        versionProperties.load(new FileInputStream(versionPropertiesFile))
-
-        def currentVersion = versionProperties.getProperty('version')
-        def versionParts = currentVersion.split("\\.")
-        def buildParts = versionParts[2].split("\\+build")
-        def buildNumber = buildParts[0].toInteger() + 1
-        def newVersion = "${versionParts[0]}.${versionParts[1]}.${buildNumber.toString().padLeft(2, '0')}+build${buildParts[1]}"
-
-        versionProperties.setProperty('version', newVersion)
-        versionProperties.store(versionPropertiesFile.newWriter(), null)
-
-        println("Version was updated from $currentVersion to $newVersion")
-    }
-}
-
-tasks.register('updateBuild') {
-    dependsOn 'build'
-    doLast {
-        def versionPropertiesFile = file('gradle.properties')
-        def versionProperties = new Properties()
-        versionProperties.load(new FileInputStream(versionPropertiesFile))
-
-        def currentVersion = versionProperties.getProperty('version')
-        def versionParts = currentVersion.split("\\+build")
-        def buildNumber = versionParts[1].toInteger() + 1
-        def newVersion = "${versionParts[0]}+build${buildNumber.toString().padLeft(3, '0')}"
-
-        versionProperties.setProperty('version', newVersion)
-        versionProperties.store(versionPropertiesFile.newWriter(), null)
-
-        println("Version was updated from $currentVersion to $newVersion")
-    }
-}
 
 repositories {
     mavenCentral()
@@ -101,7 +36,7 @@ dependencies {
     compileOnly 'io.papermc.paper:paper-api:1.19.3-R0.1-SNAPSHOT'
 
     //My library
-    implementation files('lib/AstroLibs-1.0.02.jar')
+    implementation files('run/plugins/AstroLibs-1.02.01+build015.jar')
 
     //Kyori Adventure Library
     implementation('net.kyori:adventure-api:4.12.0')
@@ -140,5 +75,83 @@ processResources {
     filteringCharset 'UTF-8'
     filesMatching('plugin.yml') {
         expand props
+    }
+}
+
+task updateMajor () {
+    doLast {
+        def versionPropertiesFile = file('gradle.properties')
+        def versionProperties = new Properties()
+        versionProperties.load(new FileInputStream(versionPropertiesFile))
+
+        def currentVersion = versionProperties.getProperty('version')
+        def versionParts = currentVersion.split("\\.")
+        def buildParts = versionParts[2].split("\\+build")
+        def buildNumber = buildParts[1].toInteger() + 1
+        def majorNumber = versionParts[0].toInteger() + 1
+        def newVersion = "${majorNumber}.${versionParts[1]}.${buildParts[0]}+build${buildNumber.toString().padLeft(3, '0')}"
+
+        versionProperties.setProperty('version', newVersion)
+        versionProperties.store(versionPropertiesFile.newWriter(), null)
+
+        println("Version was updated from $currentVersion to $newVersion")
+    }
+}
+
+task updateMinor () {
+    doLast {
+        def versionPropertiesFile = file('gradle.properties')
+        def versionProperties = new Properties()
+        versionProperties.load(new FileInputStream(versionPropertiesFile))
+
+        def currentVersion = versionProperties.getProperty('version')
+        def versionParts = currentVersion.split("\\.")
+        def buildParts = versionParts[2].split("\\+build");
+        def buildNumber = buildParts[1].toInteger() + 1
+        def minorNumber = versionParts[1].toInteger() + 1
+        def newVersion = "${versionParts[0]}.${minorNumber.toString().padLeft(2, '0')}.${buildParts[0]}+build${buildNumber.toString().padLeft(3, '0')}"
+
+        versionProperties.setProperty('version', newVersion)
+        versionProperties.store(versionPropertiesFile.newWriter(), null)
+
+        println("Version was updated from $currentVersion to $newVersion")
+    }
+}
+
+task updatePatch () {
+    doLast {
+        def versionPropertiesFile = file('gradle.properties')
+        def versionProperties = new Properties()
+        versionProperties.load(new FileInputStream(versionPropertiesFile))
+
+        def currentVersion = versionProperties.getProperty('version')
+        def versionParts = currentVersion.split("\\.")
+        def buildParts = versionParts[2].split("\\+build")
+        def patchNumber = buildParts[0].toInteger() + 1
+        def buildNumber = buildParts[1].toInteger() + 1
+        def newVersion = "${versionParts[0]}.${versionParts[1]}.${patchNumber.toString().padLeft(2, '0')}+build${buildNumber.toString().padLeft(3, '0')}"
+
+        versionProperties.setProperty('version', newVersion)
+        versionProperties.store(versionPropertiesFile.newWriter(), null)
+
+        println("Version was updated from $currentVersion to $newVersion")
+    }
+}
+
+task updateBuild {
+    doLast {
+        def versionPropertiesFile = file('gradle.properties')
+        def versionProperties = new Properties()
+        versionProperties.load(new FileInputStream(versionPropertiesFile))
+
+        def currentVersion = versionProperties.getProperty('version')
+        def versionParts = currentVersion.split("\\+build")
+        def buildNumber = versionParts[1].toInteger() + 1
+        def newVersion = "${versionParts[0]}+build${buildNumber.toString().padLeft(3, '0')}"
+
+        versionProperties.setProperty('version', newVersion)
+        versionProperties.store(versionPropertiesFile.newWriter(), null)
+
+        println("Version was updated from $currentVersion to $newVersion")
     }
 }
