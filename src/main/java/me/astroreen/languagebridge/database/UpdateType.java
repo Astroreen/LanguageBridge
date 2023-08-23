@@ -10,12 +10,11 @@ public enum UpdateType {
     /**
      * UUID, language.
      */
-    ADD_PLAYER_LANGUAGE(prefix -> "INSERT INTO " + prefix + "language (playerID, language) VALUES (?, ?)"),
+    ADD_PLAYER(prefix -> "INSERT INTO " + prefix + "language (playerID, language) VALUES (?, ?)"),
     /**
      * Language, UUID.
      */
     UPDATE_PLAYER_LANGUAGE(prefix -> "UPDATE " + prefix + "language SET language = ? WHERE playerID = ?"),
-    LOAD_ALL_PLAYERS_UUID(prefix -> "SELECT playerID FROM " + prefix + "language"), //todo: on start get all uuids and on player join check if we have player's uuid and only then add to database
     ;
 
 

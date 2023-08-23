@@ -1,14 +1,10 @@
-package me.astroreen.languagebridge.module.placeholder;
+package me.astroreen.languagebridge;
 
 import lombok.CustomLog;
 import lombok.Getter;
 import me.astroreen.astrolibs.api.config.ConfigAccessor;
 import me.astroreen.astrolibs.api.config.ConfigurationFile;
-import me.astroreen.astrolibs.utils.ConfigUtils;
-import me.astroreen.languagebridge.LanguageBridge;
 import me.astroreen.languagebridge.config.Config;
-import me.astroreen.languagebridge.database.Connector;
-import me.astroreen.languagebridge.database.QueryType;
 import net.kyori.adventure.text.TextComponent;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.entity.Player;
@@ -16,8 +12,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -46,8 +40,6 @@ public class PlaceholderManager {
     //key, language, value
     private final Map<String, Map<String, String>> placeholders = new TreeMap<>();
     private boolean storePlaceholders = false;
-    private Connector connector;
-
     public PlaceholderManager(final @NotNull LanguageBridge plugin) {
         this.plugin = plugin;
         reload(); // as setup
@@ -58,8 +50,6 @@ public class PlaceholderManager {
      */
     public void reload() {
         placeholders.clear();
-
-        this.connector = new Connector(plugin.getDatabase());
 
         final ConfigurationFile config = plugin.getPluginConfig();
         this.storePlaceholders = config.getBoolean("settings.store-keys-in-memory", false);
@@ -83,7 +73,7 @@ public class PlaceholderManager {
         final StringBuilder builder = new StringBuilder();
         while (matcher.find()) {
             final String matchedText = matcher.group();
-            final Optional<String> language = getPlayerLanguage(player.getUniqueId());
+            final Optional<String> language = Config.getPlayerLanguage(player.getUniqueId());
 
             final Optional<String> value = getValueFromKey(
                     language.orElseGet(() -> //get default value
@@ -97,23 +87,6 @@ public class PlaceholderManager {
     }
 
     /**
-     * Gets player language stored in database.
-     *
-     * @param uuid the uuid of a player
-     * @return language optional
-     */
-    public @NotNull Optional<String> getPlayerLanguage(final UUID uuid) {
-        try {
-            final ResultSet rs = connector.querySQL(QueryType.SELECT_PLAYER_LANGUAGE, String.valueOf(uuid));
-            rs.next();
-            return Optional.ofNullable(rs.getString("language"));
-        } catch (SQLException e) {
-            LOG.error("There was an exception with SQL", e);
-            return Optional.empty();
-        }
-    }
-
-    /**
      * Get placeholder value.
      *
      * @param uuid the uuid of a player to get language from
@@ -121,7 +94,7 @@ public class PlaceholderManager {
      * @return value or empty optional
      */
     public @NotNull Optional<String> getValueFromKey(final UUID uuid, final String key) {
-        return getValueFromKey(getPlayerLanguage(uuid).orElse(Config.getDefaultLanguage()), key);
+        return getValueFromKey(Config.getPlayerLanguage(uuid).orElse(Config.getDefaultLanguage()), key);
     }
 
     /**

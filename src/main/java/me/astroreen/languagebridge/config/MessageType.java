@@ -1,4 +1,4 @@
-package me.astroreen.languagebridge;
+package me.astroreen.languagebridge.config;
 
 /**
  * Type of messages

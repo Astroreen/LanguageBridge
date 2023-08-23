@@ -1,6 +1,7 @@
 package me.astroreen.languagebridge.compatibility.placeholderapi;
 
 import me.astroreen.languagebridge.LanguageBridge;
+import me.astroreen.languagebridge.PlaceholderManager;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
@@ -36,7 +37,7 @@ public class BRPlaceholder extends PlaceholderExpansion {
      */
     @Override
     public @NotNull String getIdentifier() {
-        return "lnbr";
+        return PlaceholderManager.getPREFIX();
     }
 
     /**
@@ -66,6 +67,7 @@ public class BRPlaceholder extends PlaceholderExpansion {
      * @param params A Placeholder.
      * @return possibly-null String of the requested params.
      */
+    //todo: parse placeholders using PlaceholderManager
     @Override
     public String onRequest(final OfflinePlayer player, final @NotNull String params) {
         if(player == null) return "";

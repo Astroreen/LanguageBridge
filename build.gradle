@@ -44,11 +44,10 @@ dependencies {
     compileOnly 'me.clip:placeholderapi:2.11.2'
     //LuckPerms
     compileOnly("net.luckperms:api:5.4")
-    //Lombok
-    compileOnly 'org.projectlombok:lombok:1.18.24'
-    annotationProcessor 'org.projectlombok:lombok:1.18.24'
-    testCompileOnly 'org.projectlombok:lombok:1.18.24'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.24'
+
+    //Test JUnit
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.0'
     //Ansi colors for console
     implementation 'org.fusesource.jansi:jansi:2.4.0'
 }

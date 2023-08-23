@@ -15,16 +15,12 @@ import me.astroreen.languagebridge.compatibility.luckperms.BRLuckPermsIntegrator
 import me.astroreen.languagebridge.compatibility.luckperms.LPPermissionManager;
 import me.astroreen.languagebridge.compatibility.placeholderapi.PlaceholderAPIIntegrator;
 import me.astroreen.languagebridge.config.Config;
-import me.astroreen.languagebridge.database.AsyncSaver;
-import me.astroreen.languagebridge.database.Database;
-import me.astroreen.languagebridge.database.MySQL;
-import me.astroreen.languagebridge.database.SQLite;
+import me.astroreen.languagebridge.database.*;
 import me.astroreen.languagebridge.listener.onPlayerJoinEventListener;
 import me.astroreen.languagebridge.listener.onPrepareAnvilEventListener;
-import me.astroreen.languagebridge.module.permissions.DefaultPermissionManager;
-import me.astroreen.languagebridge.module.permissions.Permission;
-import me.astroreen.languagebridge.module.permissions.PermissionManager;
-import me.astroreen.languagebridge.module.placeholder.PlaceholderManager;
+import me.astroreen.languagebridge.permissions.DefaultPermissionManager;
+import me.astroreen.languagebridge.permissions.Permission;
+import me.astroreen.languagebridge.permissions.PermissionManager;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.event.EventPriority;
@@ -45,27 +41,20 @@ import java.util.stream.Stream;
 public final class LanguageBridge extends JavaPlugin {
     /**
      * Get the plugin's instance.
-     *
-     * @return {@link LanguageBridge}'s instance.
      */
-    @Getter
-    private static LanguageBridge instance;
+    private static @Getter LanguageBridge instance;
     /**
      * Returns the permission manager
-     *
-     * @return {@link DefaultPermissionManager} instance
      */
-    @Getter
-    private static PermissionManager permissionManager;
+    private @Getter PermissionManager permissionManager;
     /**
      * Returns the database instance
-     *
-     * @return {@link Database}'s instance
      */
-    @Getter
-    private Database database;
-    @Getter
-    private PlaceholderManager placeholderManager;
+    private @Getter Database database;
+    /**
+     * Returns the placeholder manager
+     */
+    private @Getter PlaceholderManager placeholderManager;
     private Logger log;
     private ConfigurationFile config;
     private AsyncSaver saver;
@@ -161,6 +150,7 @@ public final class LanguageBridge extends JavaPlugin {
         }
         Config.setup(this);
         ListenerManager.setup(this, getListeners(), log);
+        onPlayerJoinEventListener.reload();
         DebugHandlerConfig.setup(config);
         LanguageBridge.eventPriority = reloadEventPriority();
 

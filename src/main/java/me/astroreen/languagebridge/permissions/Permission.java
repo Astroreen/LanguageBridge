@@ -1,4 +1,4 @@
-package me.astroreen.languagebridge.module.permissions;
+package me.astroreen.languagebridge.permissions;
 
 import lombok.Getter;
 import org.bukkit.permissions.PermissionDefault;
@@ -9,8 +9,10 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 
 public enum Permission {
-    //todo: for every language create permission language.change.<language>
-    //todo: permission to change language
+        PLACEHOLDER_ANVIL("placeholder.anvil", "Permission to use placeholders in anvil", PermissionDefault.FALSE),
+    ALL_PLACEHOLDERS("placeholder.*",
+            "General permission to write and use all placeholders", PermissionDefault.OP,
+            setChildren(PLACEHOLDER_ANVIL)),
         MAIN_COMMAND("command.languagebridge", "Permission for main command", PermissionDefault.OP),
     All_COMMANDS("command.*", PermissionDefault.OP, setChildren(MAIN_COMMAND)),
         CHANGE_DEFAULT_LANGUAGE(
@@ -20,7 +22,7 @@ public enum Permission {
         DEBUG("debug", "Permission for controlling debug state", PermissionDefault.FALSE),
         RELOAD("reload", "Permission to reload plugin", PermissionDefault.FALSE),
     ADMIN(  "admin", "Permission for admins", PermissionDefault.OP,
-            setChildren(All_COMMANDS, RELOAD, DEBUG, CHANGE_DEFAULT_LANGUAGE)),
+            setChildren(All_COMMANDS, RELOAD, DEBUG, CHANGE_DEFAULT_LANGUAGE, ALL_PLACEHOLDERS)),
     ALL("*", PermissionDefault.OP, setChildren(ADMIN)),
 
     ;

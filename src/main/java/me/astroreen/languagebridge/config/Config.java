@@ -3,15 +3,17 @@ package me.astroreen.languagebridge.config;
 import me.astroreen.astrolibs.api.config.ConfigAccessor;
 import me.astroreen.astrolibs.api.config.ConfigurationFile;
 import me.astroreen.astrolibs.api.compatibility.Compatibility;
-import me.astroreen.astrolibs.api.compatibility.CompatiblePlugin;
 import me.astroreen.astrolibs.utils.ColorCodes;
 import me.astroreen.languagebridge.LanguageBridge;
-import me.astroreen.languagebridge.MessageType;
-import me.astroreen.languagebridge.module.placeholder.PlaceholderManager;
+import me.astroreen.languagebridge.PlaceholderManager;
 import lombok.CustomLog;
+import me.astroreen.languagebridge.database.Connector;
+import me.astroreen.languagebridge.database.QueryType;
+import me.astroreen.languagebridge.permissions.Permission;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.kyori.adventure.text.TextComponent;
 import org.bukkit.Sound;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -20,12 +22,13 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
 
 import static me.astroreen.astrolibs.api.compatibility.CompatiblePlugin.*;
 
+//todo: get prefix based on player language
 @CustomLog
 public class Config {
     private static final Set<String> LANGUAGES = new HashSet<>();
@@ -34,12 +37,14 @@ public class Config {
     private static ConfigAccessor internal = null;
     private static String defaultLanguage = null;
     private static String prefix = "";
+    private static Connector connector;
 
     private Config() {
     }
 
     public static void setup(final @NotNull LanguageBridge plugin) {
         Config.plugin = plugin;
+        Config.connector = new Connector(plugin.getDatabase());
         Config.LANGUAGES.clear();
 
         final File root = plugin.getDataFolder();
@@ -56,13 +61,13 @@ public class Config {
         final List<String> languages = config.getStringList("settings.languages");
 
         //default language
-        if(languages.contains(lang)) Config.defaultLanguage = lang;
+        if (languages.contains(lang)) Config.defaultLanguage = lang;
         else {
             LOG.error("Default language (" + lang + ") must be in the list with other languages and defined correctly!");
             Config.defaultLanguage = "en";
         }
 
-        for(final String key : languages){
+        for (final String key : languages) {
             //create new file for storing languages keys
             try {
                 final ConfigAccessor accessor;
@@ -82,7 +87,7 @@ public class Config {
             }
 
             //if plugin-messages.yml contain language, will not create template
-            if(messages.getKeys(false).contains(key)) continue;
+            if (messages.getKeys(false).contains(key)) continue;
 
             //generate templates for new language
             messages.set(key, internal.getConfig().getConfigurationSection("en"));
@@ -97,6 +102,24 @@ public class Config {
         LOG.debug("Loaded '" + LANGUAGES.toString().substring(1, LANGUAGES.toString().length() - 1) + "' languages.");
 
         Config.prefix = getMessage(Config.defaultLanguage, MessageType.PREFIX);
+    }
+
+    /**
+     * Gets player language stored in database.
+     *
+     * @param uuid the uuid of a player
+     * @return language optional
+     */
+    public static @NotNull Optional<String> getPlayerLanguage(final UUID uuid) {
+        try (
+                final ResultSet rs = connector.querySQL(QueryType.SELECT_PLAYER_LANGUAGE, String.valueOf(uuid))
+        ) {
+            rs.next();
+            return Optional.ofNullable(rs.getString("language"));
+        } catch (SQLException e) {
+            LOG.error("There was an exception with SQL", e);
+            return Optional.empty();
+        }
     }
 
     /**
@@ -149,6 +172,19 @@ public class Config {
      * Retrieves the message from the configuration in specified language
      *
      * @param message color of the message to retrieve
+     * @param uuid  the uuid of a player to get language from, in which the message should be retrieved
+     * @return message in that language, or message in English, or null if it
+     * does not exist
+     */
+    public static @NotNull String getMessage(final UUID uuid, final @NotNull MessageType message) {
+        final String language = getPlayerLanguage(uuid).orElse(getDefaultLanguage());
+        return getMessage(language, message, (String[]) null);
+    }
+
+    /**
+     * Retrieves the message from the configuration in specified language
+     *
+     * @param message color of the message to retrieve
      * @param lang    language in which the message should be retrieved
      * @return message in that language, or message in English, or null if it
      * does not exist
@@ -168,10 +204,10 @@ public class Config {
      * does not exist
      */
     public static @NotNull String getMessage(String lang, final @NotNull MessageType message, final String... variables) {
-        if (lang == null) lang = getDefaultLanguage();
+        if (lang == null || !LANGUAGES.contains(lang)) lang = getDefaultLanguage();
 
         String result = messages.getString(lang + "." + message.path);
-        if (result == null || result.equals("")) {
+        if (result == null || result.isBlank()) {
             result = messages.getString("en." + message.path);
         }
         if (result == null) {
@@ -194,11 +230,38 @@ public class Config {
     }
 
     /**
+     * Sends a message to sender in his chosen language or default or English
+     * (if previous not found).
+     *
+     * @param sender the sender
+     * @param msg    ID of the message
+     */
+    public static void sendMessage(final CommandSender sender, final MessageType msg) {
+        sendMessage(sender, msg, (String[]) null);
+    }
+
+    /**
      * Sends a message to player in his chosen language or default or English
      * (if previous not found). It will replace all {x} sequences with the
      * variables.
      *
-     * @param player player
+     * @param sender    the sender
+     * @param msg       ID of the message
+     * @param variables array of variables which will be inserted into the string
+     */
+    public static void sendMessage(final CommandSender sender, final MessageType msg, final String... variables) {
+        if (sender instanceof Player player) {
+            Config.sendMessage(player, msg, variables);
+        } else {
+            sender.sendMessage(Config.parseText(Config.getMessage(msg, variables)));
+        }
+    }
+
+    /**
+     * Sends a message to player in his chosen language or default or English
+     * (if previous not found).
+     *
+     * @param player the player
      * @param msg    ID of the message
      */
     public static void sendMessage(final Player player, final @NotNull MessageType msg) {
@@ -208,9 +271,9 @@ public class Config {
     /**
      * Sends a message to player in his chosen language or default or English
      * (if previous not found). It will replace all {x} sequences with the
-     * variables and play the sound.
+     * variables.
      *
-     * @param player    player
+     * @param player    the player
      * @param msg       ID of the message
      * @param variables array of variables which will be inserted into the string
      */
@@ -218,7 +281,7 @@ public class Config {
         sendMessage(player, null, msg, variables);
     }
 
-    public static void sendMessage(final Player player, final String lang, final @NotNull MessageType msg, final String... variables){
+    public static void sendMessage(final Player player, final String lang, final @NotNull MessageType msg, final String... variables) {
         sendMessage(player, lang, msg, null, variables);
     }
 
@@ -227,18 +290,53 @@ public class Config {
      * (if previous not found). It will replace all {x} sequences with the
      * variables and play the sound. It will also add a prefix to the message.
      *
-     * @param player    player
+     * @param player    the player
      * @param msg       ID of the message
      * @param variables array of variables which will be inserted into the message
      * @param sound     color of the sound to play to the player
      */
     public static void sendMessage(final Player player, String lang, final @NotNull MessageType msg, final ConfigSound sound, final String... variables) {
-        if (player == null) return;
+        if (player == null) {
+            LOG.error("In order to send messages, player must be defined!");
+            return;
+        }
 
-        if(lang == null || !getLanguages().contains(lang)) lang = getDefaultLanguage();
+        if (lang == null || !getLanguages().contains(lang)) {
+            lang = getPlayerLanguage(player.getUniqueId()).orElse(getDefaultLanguage());
+        }
 
         player.sendMessage(parseText(player, getMessage(lang, msg, variables)));
         if (sound != null) playSound(player, sound);
+    }
+
+    /**
+     * Checks permission of a sender and send a message if player don't have one.
+     *
+     * @param sender the sender
+     * @param perm   the permission
+     * @return true if sender don't have permission, otherwise false
+     */
+    public static boolean noPermission(final @NotNull CommandSender sender, final @NotNull Permission perm) {
+        return noPermission(sender, perm.getName());
+    }
+
+    /**
+     * Checks permission of a sender and send a message if player don't have one.
+     *
+     * @param sender the sender
+     * @param perm   the permission
+     * @return true if sender don't have permission, otherwise false
+     */
+    public static boolean noPermission(final @NotNull CommandSender sender, final @NotNull String perm) {
+        if (sender instanceof Player player) {
+            if (plugin.getPermissionManager().hasPermission(player, perm)) return false;
+            Config.sendMessage(sender, MessageType.NO_PERMISSION);
+            return true;
+        } else if (!sender.hasPermission(perm)) {
+            Config.sendMessage(sender, MessageType.NO_PERMISSION);
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -258,8 +356,8 @@ public class Config {
      * @return The parsed message as Kyori {@link TextComponent}
      */
     public static @NotNull TextComponent parseText(final @NotNull Player player, final @NotNull String msg) {
-        if(!Compatibility.getHooked().contains(PLACEHOLDERAPI)) {
-            if(PlaceholderManager.hasPlaceholder(msg)) {
+        if (!Compatibility.getHooked().contains(PLACEHOLDERAPI)) {
+            if (PlaceholderManager.hasPlaceholder(msg)) {
                 final PlaceholderManager placeholderManager = plugin.getPlaceholderManager();
                 return placeholderManager.translate(player, msg);
             } else
@@ -285,18 +383,18 @@ public class Config {
         if (rawSound == null) {
             return;
         }
-            final String[] sound = rawSound.split(" ", 3);
-            if (sound.length != 3) {
-                LOG.error("Sound in the config used wrong: " + rawSound);
-                return;
+        final String[] sound = rawSound.split(" ", 3);
+        if (sound.length != 3) {
+            LOG.error("Sound in the config used wrong: " + rawSound);
+            return;
+        }
+        if (!sound[0].equalsIgnoreCase("false")) {
+            try {
+                player.playSound(player.getLocation(), Sound.valueOf(sound[0]), Float.parseFloat(sound[1]), Float.parseFloat(sound[2]));
+            } catch (final IllegalArgumentException e) {
+                LOG.warn("Unknown sound type: " + rawSound, e);
             }
-            if (!sound[0].equalsIgnoreCase("false")) {
-                try {
-                    player.playSound(player.getLocation(), Sound.valueOf(sound[0]), Float.parseFloat(sound[1]), Float.parseFloat(sound[2]));
-                } catch (final IllegalArgumentException e) {
-                    LOG.warn("Unknown sound type: " + rawSound, e);
-                }
-            }
+        }
     }
 
     /**

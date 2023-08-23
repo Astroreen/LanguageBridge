@@ -1,6 +1,7 @@
 package me.astroreen.languagebridge.database;
 
 import lombok.CustomLog;
+import lombok.Getter;
 import me.astroreen.languagebridge.LanguageBridge;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
@@ -16,6 +17,8 @@ import java.sql.SQLException;
 public abstract class Database {
 
     protected LanguageBridge plugin = LanguageBridge.getInstance();
+
+    @Getter
     protected String prefix;
     protected Connection con;
 
@@ -56,7 +59,6 @@ public abstract class Database {
         final String autoIncrement = isMySQLUsed ? "AUTO_INCREMENT" : "AUTOINCREMENT";
         final String defaultLanguage = plugin.getPluginConfig().getString("settings.default-language", "en");
         try {
-            //todo: update language name if it was changed
             getConnection().createStatement()
                     .executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "language (id INTEGER PRIMARY KEY "
                             + autoIncrement + ", playerID VARCHAR(256) NOT NULL, language VARCHAR(25) "
@@ -65,6 +67,4 @@ public abstract class Database {
             LOG.error("There was an exception with SQL", e);
         }
     }
-
-    public String getPrefix() {return prefix;}
 }

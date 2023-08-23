@@ -4,7 +4,8 @@ import me.astroreen.astrolibs.api.listener.EventListener;
 import me.astroreen.astrolibs.utils.PlayerConverter;
 import me.astroreen.languagebridge.LanguageBridge;
 import me.astroreen.languagebridge.config.Config;
-import me.astroreen.languagebridge.module.placeholder.PlaceholderManager;
+import me.astroreen.languagebridge.PlaceholderManager;
+import me.astroreen.languagebridge.permissions.Permission;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.TextReplacementConfig;
@@ -18,7 +19,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 
-//todo: check for lore too
 public class onPrepareAnvilEventListener extends EventListener {
 
     private final LanguageBridge plugin;
@@ -51,7 +51,11 @@ public class onPrepareAnvilEventListener extends EventListener {
 
         Component name = itemDisplayName;
         String textName = PlainTextComponentSerializer.plainText().serialize(name);
-        while(PlaceholderManager.hasPlaceholder(textName)){
+        boolean hasPlaceholder = PlaceholderManager.hasPlaceholder(textName);
+
+        if(hasPlaceholder && Config.noPermission(player, Permission.PLACEHOLDER_ANVIL)) return;
+
+        while(hasPlaceholder){
             final PlaceholderManager manager = plugin.getPlaceholderManager();
             final Optional<String> placeholder = PlaceholderManager.getPlaceholderFromText(textName);
 
@@ -75,6 +79,7 @@ public class onPrepareAnvilEventListener extends EventListener {
                     .replacement(value)
                     .build());
             textName = PlainTextComponentSerializer.plainText().serialize(name);
+            hasPlaceholder = PlaceholderManager.hasPlaceholder(textName);
         }
 
 

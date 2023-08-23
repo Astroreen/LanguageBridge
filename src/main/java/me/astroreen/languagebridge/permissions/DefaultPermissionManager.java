@@ -1,4 +1,4 @@
-package me.astroreen.languagebridge.module.permissions;
+package me.astroreen.languagebridge.permissions;
 
 import lombok.CustomLog;
 import me.astroreen.astrolibs.utils.PlayerConverter;

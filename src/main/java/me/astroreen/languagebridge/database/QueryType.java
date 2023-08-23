@@ -10,6 +10,10 @@ public enum QueryType {
      * UUID.
      */
     SELECT_PLAYER_LANGUAGE(prefix -> "SELECT language FROM " + prefix + "language WHERE playerID = ?;"),
+    /**
+     * Nothing.
+     */
+    LOAD_ALL_PLAYERS_UUID(prefix -> "SELECT playerID FROM " + prefix + "language")
     ;
 
     /**
