@@ -1,6 +1,6 @@
 package me.astroreen.languagebridge.compatibility.luckperms;
 
-import me.astroreen.astrolibs.compatibility.Integrator;
+import me.astroreen.astrolibs.api.compatibility.Integrator;
 import net.luckperms.api.LuckPerms;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.RegisteredServiceProvider;

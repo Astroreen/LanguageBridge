@@ -12,12 +12,11 @@ en:
     already-language: '&#f09c0bThe language is already set to "{0}".'
     no-such-language: '&#f09c0bNo such language ({0}) in file ''plugin-messages.yml''.'
     set-language-successfully: '&#6ffc03Language successfully set to "{0}"!'
-    set-language-error: '&d82625Failed to save new default language option to config
-      file!'
+    set-language-error: '&d82625Failed to save new default language option to config file!'
   debug:
     current-debug: '&#6ffc03Debug mode {0}.'
-    already-debugging: '&#f09c0bDebug mode is already set to {0}!'
-    set-debug-successfully: '&#6ffc03Debug mode successfully set to {0}.'
+    already-debugging: '&#f09c0bDebug mode is already {0}!'
+    set-debug-successfully: '&#6ffc03Debug mode successfully {0}.'
     set-debug-error: '&d82625Failed to save new debug option to config file!'
   variable:
     enabled: enabled

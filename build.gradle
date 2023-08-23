@@ -36,7 +36,7 @@ dependencies {
     compileOnly 'io.papermc.paper:paper-api:1.19.3-R0.1-SNAPSHOT'
 
     //My library
-    implementation files('run/plugins/AstroLibs-1.02.01+build015.jar')
+    implementation files('run/plugins/AstroLibs-1.02.05+build022.jar')
 
     //Kyori Adventure Library
     implementation('net.kyori:adventure-api:4.12.0')

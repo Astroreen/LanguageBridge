@@ -4,10 +4,11 @@ import lombok.Getter;
 import me.astroreen.astrolibs.api.config.ConfigurationFile;
 import me.astroreen.astrolibs.api.logger.Logger;
 import me.astroreen.astrolibs.api.logger.LoggerFactory;
-import me.astroreen.astrolibs.compatibility.Compatibility;
-import me.astroreen.astrolibs.compatibility.CompatiblePlugin;
-import me.astroreen.astrolibs.compatibility.Integrator;
-import me.astroreen.astrolibs.listener.ListenerManager;
+import me.astroreen.astrolibs.api.compatibility.Compatibility;
+import me.astroreen.astrolibs.api.compatibility.CompatiblePlugin;
+import me.astroreen.astrolibs.api.compatibility.Integrator;
+import me.astroreen.astrolibs.api.listener.Listener;
+import me.astroreen.astrolibs.api.listener.ListenerManager;
 import me.astroreen.astrolibs.module.logger.DebugHandlerConfig;
 import me.astroreen.languagebridge.commands.LanguageBridgeCommand;
 import me.astroreen.languagebridge.compatibility.luckperms.BRLuckPermsIntegrator;
@@ -18,6 +19,8 @@ import me.astroreen.languagebridge.database.AsyncSaver;
 import me.astroreen.languagebridge.database.Database;
 import me.astroreen.languagebridge.database.MySQL;
 import me.astroreen.languagebridge.database.SQLite;
+import me.astroreen.languagebridge.listener.onPlayerJoinEventListener;
+import me.astroreen.languagebridge.listener.onPrepareAnvilEventListener;
 import me.astroreen.languagebridge.module.permissions.DefaultPermissionManager;
 import me.astroreen.languagebridge.module.permissions.Permission;
 import me.astroreen.languagebridge.module.permissions.PermissionManager;
@@ -26,15 +29,18 @@ import org.bukkit.Bukkit;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.event.EventPriority;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
+import java.util.stream.Stream;
 
 public final class LanguageBridge extends JavaPlugin {
     /**
@@ -44,16 +50,6 @@ public final class LanguageBridge extends JavaPlugin {
      */
     @Getter
     private static LanguageBridge instance;
-    private Logger log;
-    private ConfigurationFile config;
-    /**
-     * Returns the database instance
-     *
-     * @return {@link Database}'s instance
-     */
-    @Getter
-    private Database database;
-    private AsyncSaver saver;
     /**
      * Returns the permission manager
      *
@@ -61,9 +57,19 @@ public final class LanguageBridge extends JavaPlugin {
      */
     @Getter
     private static PermissionManager permissionManager;
-    private boolean isMySQLUsed;
+    /**
+     * Returns the database instance
+     *
+     * @return {@link Database}'s instance
+     */
+    @Getter
+    private Database database;
     @Getter
     private PlaceholderManager placeholderManager;
+    private Logger log;
+    private ConfigurationFile config;
+    private AsyncSaver saver;
+    private boolean isMySQLUsed;
     /**
      * Get event priority defined in config.
      *
@@ -77,7 +83,7 @@ public final class LanguageBridge extends JavaPlugin {
      *
      * @return {@link ConfigurationFile}
      */
-    public @Nullable ConfigurationFile getPluginConfig() {
+    public @NotNull ConfigurationFile getPluginConfig() {
         return config;
     }
 
@@ -95,8 +101,8 @@ public final class LanguageBridge extends JavaPlugin {
         try {
             config = ConfigurationFile.create(new File(getDataFolder(), "config.yml"), this, "config.yml");
         } catch (InvalidConfigurationException | FileNotFoundException e) {
-            getLogger().log(Level.SEVERE, "Could not load the config.yml file!", e);
-            return;
+            getLogger().log(Level.SEVERE, "Could not load the config.yml file! Shutting down plugin...", e);
+            Bukkit.getPluginManager().disablePlugin(this);
         }
         DebugHandlerConfig.setup(config);
 
@@ -109,7 +115,7 @@ public final class LanguageBridge extends JavaPlugin {
         // Initialize
         //todo: create listeners to translate native placeholders
         //for books, anvils, chat, nicknames(tags), boss bar, tab list, titles
-        ListenerManager.setup(this, null, log);                            //listeners
+        ListenerManager.setup(this, getListeners(), log);                         //listeners
         new Compatibility(this, getIntegrators(), config, log);                   //compatibility with other plugins
         Config.setup(this);                                                             //messages
         permissionManager = Compatibility.getHooked()                                   //permission manager
@@ -154,15 +160,20 @@ public final class LanguageBridge extends JavaPlugin {
             log.warn("Could not reload config! " + e.getMessage(), e);
         }
         Config.setup(this);
+        ListenerManager.setup(this, getListeners(), log);
         DebugHandlerConfig.setup(config);
         LanguageBridge.eventPriority = reloadEventPriority();
+
+        //updating database connection configuration if it is null
+        if (database != null && database.getConnection() == null) {
+            database.closeConnection();
+            this.database = null;
+            openDatabaseConnection();
+        }
+
         Compatibility.reload();
         permissionManager = Compatibility.getHooked().contains(CompatiblePlugin.LUCKPERMS) ?
                 LPPermissionManager.getInstance() : new DefaultPermissionManager();
-
-        //updating database connection configuration
-        if (database != null) database.closeConnection();
-        openDatabaseConnection();
     }
 
     @Override
@@ -221,5 +232,20 @@ public final class LanguageBridge extends JavaPlugin {
             log.error("Config value of 'event-priority' must be defined correctly!", e);
             return EventPriority.LOWEST;
         }
+    }
+
+    private @NotNull Set<Listener> getListeners() {
+        final Set<Listener> listeners = new HashSet<>();
+
+        try {
+            Stream.of(
+                    new onPrepareAnvilEventListener(this),
+                    new onPlayerJoinEventListener(this)
+            ).forEach(listeners::add);
+        } catch (NoSuchMethodException e) {
+            log.error("Could not register listeners!", e);
+        }
+
+        return listeners;
     }
 }

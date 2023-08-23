@@ -1,8 +1,10 @@
 package me.astroreen.languagebridge.module.placeholder;
 
 import lombok.CustomLog;
+import lombok.Getter;
 import me.astroreen.astrolibs.api.config.ConfigAccessor;
 import me.astroreen.astrolibs.api.config.ConfigurationFile;
+import me.astroreen.astrolibs.utils.ConfigUtils;
 import me.astroreen.languagebridge.LanguageBridge;
 import me.astroreen.languagebridge.config.Config;
 import me.astroreen.languagebridge.database.Connector;
@@ -23,18 +25,31 @@ import java.util.regex.Pattern;
 //todo: on reload check languages in config and in database, if language don't exist, replace it with default value from config
 @CustomLog
 public class PlaceholderManager {
-    private static final String FILE_SUFFIX = "-messages.yml";
+    private static final String SYMBOL = "%";
+    /**
+     * Gets prefix that is used in placeholder pattern.
+     *
+     * @return prefix
+     */
+    @Getter
     private static final String PREFIX = "lngbr_";
-    private static final Pattern PATTERN = Pattern.compile("%" + PREFIX + ".*?%", Pattern.CASE_INSENSITIVE);
+    /**
+     * Gets placeholder pattern.
+     *
+     * @return placeholder
+     */
+    @Getter
+    private static final Pattern PATTERN = Pattern.compile(SYMBOL + PREFIX + ".*?" + SYMBOL, Pattern.CASE_INSENSITIVE);
+    private static final Pattern EMPTY_PATTERN = Pattern.compile(SYMBOL + PREFIX + SYMBOL, Pattern.CASE_INSENSITIVE);
+    private static final String FILE_SUFFIX = "-messages.yml";
     private final LanguageBridge plugin;
-    private final Connector connector;
-    private boolean storePlaceholders = false;
     //key, language, value
     private final Map<String, Map<String, String>> placeholders = new TreeMap<>();
+    private boolean storePlaceholders = false;
+    private Connector connector;
 
     public PlaceholderManager(final @NotNull LanguageBridge plugin) {
         this.plugin = plugin;
-        this.connector = new Connector(plugin.getDatabase());
         reload(); // as setup
     }
 
@@ -44,9 +59,9 @@ public class PlaceholderManager {
     public void reload() {
         placeholders.clear();
 
-        final ConfigurationFile config = plugin.getPluginConfig();
-        if(config == null) return;
+        this.connector = new Connector(plugin.getDatabase());
 
+        final ConfigurationFile config = plugin.getPluginConfig();
         this.storePlaceholders = config.getBoolean("settings.store-keys-in-memory", false);
 
         if (storePlaceholders) uploadPlaceholdersToMemory();
@@ -61,19 +76,19 @@ public class PlaceholderManager {
      */
     public TextComponent translate(final Player player, final String text) {
         //no placeholder
-        if (!hasPlaceholder(text)) return Config.parseText(text);
+        if (!hasPlaceholder(text)) return Config.parseText(player, text);
 
         //todo: create patterns for others placeholders values and add this as a method variable to dynamically get answer
         final Matcher matcher = PATTERN.matcher(text);
         final StringBuilder builder = new StringBuilder();
         while (matcher.find()) {
-            final String matchedText = matcher.group(1);
+            final String matchedText = matcher.group();
             final Optional<String> language = getPlayerLanguage(player.getUniqueId());
 
-            final Optional<String> value = getPlaceholderValue(
+            final Optional<String> value = getValueFromKey(
                     language.orElseGet(() -> //get default value
                             plugin.getPluginConfig().getString("settings.default-language", "en")),
-                    matchedText);
+                    getKeyFromPlaceholder(matchedText).orElse(matchedText));
 
             value.ifPresent(s -> matcher.appendReplacement(builder, s));
             matcher.appendTail(builder);
@@ -94,17 +109,35 @@ public class PlaceholderManager {
             return Optional.ofNullable(rs.getString("language"));
         } catch (SQLException e) {
             LOG.error("There was an exception with SQL", e);
-            return Optional.empty(); //default
+            return Optional.empty();
         }
     }
 
-    public @NotNull Optional<String> getPlaceholderValue(final String language, final String key) {
+    /**
+     * Get placeholder value.
+     *
+     * @param uuid the uuid of a player to get language from
+     * @param key  key in placeholder
+     * @return value or empty optional
+     */
+    public @NotNull Optional<String> getValueFromKey(final UUID uuid, final String key) {
+        return getValueFromKey(getPlayerLanguage(uuid).orElse(Config.getDefaultLanguage()), key);
+    }
+
+    /**
+     * Get key value.
+     *
+     * @param language language
+     * @param key      key in key
+     * @return value or empty optional
+     */
+    public @NotNull Optional<String> getValueFromKey(final String language, final String key) {
         //check if language is real
         if (!Config.getLanguages().contains(language)) return Optional.empty();
-        //check if key is really a placeholder
-        if (!hasPlaceholder(key)) return Optional.empty();
+        //check key
+        if (key == null || key.isBlank()) return Optional.empty();
+        if (!hasPlaceholder(SYMBOL + PREFIX + key + SYMBOL)) return Optional.empty();
 
-        final String value;
         if (storePlaceholders) {
             final Map<String, String> options = placeholders.get(key);
             if (options != null) return Optional.ofNullable(options.get(language));
@@ -119,6 +152,9 @@ public class PlaceholderManager {
         }
     }
 
+    /**
+     * Copy all placeholders and their values to HashMap.
+     */
     public void uploadPlaceholdersToMemory() {
         final Set<String> keys = new HashSet<>();
 
@@ -152,11 +188,11 @@ public class PlaceholderManager {
         final String language = fileName.substring(0, fileName.length() - FILE_SUFFIX.length());
 
         for (final String key : keys) {
-            if (!placeholders.containsKey(key)) {
+            final String value = accessor.getConfig().getString(key);
+            if (value == null) {
                 LOG.warn("Key '" + key + "' was not found in '" + fileName + "' file!");
                 continue;
             }
-            final String value = accessor.getConfig().getString(key);
 
             Map<String, String> options = placeholders.get(key);
             if (options == null) {
@@ -168,13 +204,101 @@ public class PlaceholderManager {
         }
     }
 
-    public static boolean hasPlaceholder(final String text) {
-        if (text == null || text.isBlank()) return false;
-        return PATTERN.matcher(text).find();
+    /**
+     * Checks if key exist.
+     *
+     * @param key      key to check
+     * @return true if exists, otherwise false
+     */
+    public boolean isKeyExist(final String key){
+        return isKeyExist(Config.getDefaultLanguage(), key);
     }
 
+    /**
+     * Checks if key exist.
+     *
+     * @param language from which language file take key from
+     * @param key      key to check
+     * @return true if exists, otherwise false
+     */
+    public boolean isKeyExist(final String language, final String key) {
+        if (key == null || key.isBlank() || language == null || language.isBlank()) return false;
+        if (storePlaceholders) return placeholders.containsKey(key);
+        try {
+            final ConfigAccessor accessor = ConfigAccessor.create(new File(plugin.getDataFolder(), language + FILE_SUFFIX));
+            return accessor.getConfig().isSet(key);
+        } catch (InvalidConfigurationException | FileNotFoundException e) {
+            LOG.warn("Could not open '" + language + FILE_SUFFIX + "' file. Reason: " + e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * Checks if language file exist in plugin folder.
+     *
+     * @param language language
+     * @return true if it does, otherwise false
+     */
     public boolean isLanguageFileExist(final String language) {
         if (language == null) return false;
         return new File(plugin.getDataFolder(), language + FILE_SUFFIX).exists();
+    }
+
+    //////////////////
+    ///   Static   ///
+    //////////////////
+
+    /**
+     * Gets first placeholder from text if one exist.
+     *
+     * @param text text
+     * @return placeholder or empty optional
+     */
+    public static Optional<String> getPlaceholderFromText(final String text) {
+        if (text == null || text.isBlank()) return Optional.empty();
+        final Matcher matcher = PATTERN.matcher(text);
+
+        if (matcher.find()) return Optional.ofNullable(matcher.group());
+
+        return Optional.empty();
+    }
+
+    /**
+     * Gets key from placeholder.
+     *
+     * @param placeholder placeholder
+     * @return key or empty optional
+     */
+    public static Optional<String> getKeyFromPlaceholder(final String placeholder) {
+        if (!hasPlaceholder(placeholder)) return Optional.empty();
+
+        final String result = placeholder.substring(
+                SYMBOL.length() + PREFIX.length(),
+                placeholder.length() - SYMBOL.length());
+
+        if (result.isBlank()) return Optional.empty();
+
+        return Optional.of(result);
+    }
+
+    /**
+     * Gets key from placeholder in text if one exist.
+     *
+     * @param text text
+     * @return key or empty optional
+     */
+    public static Optional<String> getKeyFromText(final String text) {
+        return getKeyFromPlaceholder(getPlaceholderFromText(text).orElse(null));
+    }
+
+    /**
+     * Checks text for placeholder.
+     *
+     * @param text text
+     * @return true if exists, else false
+     */
+    public static boolean hasPlaceholder(final String text) {
+        if (text == null || text.isBlank() || EMPTY_PATTERN.matcher(text).find()) return false;
+        return PATTERN.matcher(text).find();
     }
 }

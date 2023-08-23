@@ -9,7 +9,7 @@ public enum QueryType {
     /**
      * UUID.
      */
-    SELECT_PLAYER_LANGUAGE(prefix -> "SELECT language FROM " + prefix + "nickname WHERE playerID = ?;"),
+    SELECT_PLAYER_LANGUAGE(prefix -> "SELECT language FROM " + prefix + "language WHERE playerID = ?;"),
     ;
 
     /**
