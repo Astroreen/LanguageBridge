@@ -23,6 +23,8 @@ public abstract class Database {
         this.prefix = prefix;
     }
 
+    protected abstract Connection openConnection();
+
     public Connection getConnection() {
         try {
             if (con == null || con.isClosed()) con = openConnection();
@@ -32,8 +34,6 @@ public abstract class Database {
 
         return con;
     }
-
-    protected abstract Connection openConnection();
 
     public void closeConnection() {
         try {

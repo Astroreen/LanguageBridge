@@ -45,11 +45,11 @@ public class LanguageBridgeCommand implements CommandExecutor, SimpleTabComplete
             if (args.length == 0) return true;
 
             switch (args[0].toLowerCase()) {
-                case "language", "lang" -> handleLanguage(sender, args);
+                case "default-language","language", "lang", "l" -> handleLanguage(sender, args);
                 case "version", "ver", "v" ->
                         sendMessage(sender, MessageType.PLUGIN_VERSION, instance.getPluginMeta().getVersion());
-                case "debug" -> handleDebug(sender, args);
-                case "reload", "rl" -> {
+                case "debug", "d" -> handleDebug(sender, args);
+                case "reload", "rl", "r" -> {
                     if (noPermission(sender, Permission.RELOAD.getName())) return false;
                     //just reloading
                     instance.reload();
@@ -67,10 +67,10 @@ public class LanguageBridgeCommand implements CommandExecutor, SimpleTabComplete
     public Optional<List<String>> simpleTabComplete(final @NotNull CommandSender sender, final @NotNull Command command,
                                                     final @NotNull String alias, final String @NotNull ... args) {
         if (args.length == 1) {
-            return Optional.of(Arrays.asList("language", "version", "reload", "debug"));
+            return Optional.of(Arrays.asList("default-language", "version", "reload", "debug"));
         }
         return switch (args[0].toLowerCase(Locale.ROOT)) {
-            case "language" -> completeLanguage(args);
+            case "default-language" -> completeLanguage(args);
             case "debug" -> completeDebug(args);
             default -> Optional.empty();
         };
@@ -79,7 +79,7 @@ public class LanguageBridgeCommand implements CommandExecutor, SimpleTabComplete
     private void handleLanguage(final CommandSender sender, final String @NotNull ... args) {
         if (noPermission(sender, Permission.CHANGE_DEFAULT_LANGUAGE.getName())) return;
         if (args.length == 1) {
-            sendMessage(sender, MessageType.CURRENT_LANGUAGE, Config.getLanguage());
+            sendMessage(sender, MessageType.CURRENT_LANGUAGE, Config.getDefaultLanguage());
             return;
         }
 
@@ -89,7 +89,7 @@ public class LanguageBridgeCommand implements CommandExecutor, SimpleTabComplete
             return;
         }
 
-        final String language = Config.getLanguage();
+        final String language = Config.getDefaultLanguage();
         if (args.length == 2) {
             if (language.equalsIgnoreCase(args[1])) {
                 sendMessage(sender, MessageType.LANGUAGE_ALREADY_SET, language);
@@ -97,7 +97,7 @@ public class LanguageBridgeCommand implements CommandExecutor, SimpleTabComplete
             }
 
             try {
-                Config.setLanguage(args[1]);
+                Config.setDefaultLanguage(args[1]);
             } catch (final IllegalArgumentException e) {
                 sendMessage(sender, MessageType.NO_SUCH_LANGUAGE);
                 return;

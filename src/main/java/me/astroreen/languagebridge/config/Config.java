@@ -2,8 +2,8 @@ package me.astroreen.languagebridge.config;
 
 import me.astroreen.astrolibs.api.config.ConfigAccessor;
 import me.astroreen.astrolibs.api.config.ConfigurationFile;
-import me.astroreen.astrolibs.compatibility.Compatibility;
-import me.astroreen.astrolibs.compatibility.CompatiblePlugin;
+import me.astroreen.astrolibs.api.compatibility.Compatibility;
+import me.astroreen.astrolibs.api.compatibility.CompatiblePlugin;
 import me.astroreen.astrolibs.utils.ColorCodes;
 import me.astroreen.languagebridge.LanguageBridge;
 import me.astroreen.languagebridge.MessageType;
@@ -24,13 +24,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static me.astroreen.astrolibs.api.compatibility.CompatiblePlugin.*;
+
 @CustomLog
 public class Config {
     private static final Set<String> LANGUAGES = new HashSet<>();
     private static LanguageBridge plugin;
     private static ConfigurationFile messages = null;
     private static ConfigAccessor internal = null;
-    private static String lang = null;
+    private static String defaultLanguage = null;
     private static String prefix = "";
 
     private Config() {
@@ -54,8 +56,11 @@ public class Config {
         final List<String> languages = config.getStringList("settings.languages");
 
         //default language
-        if(languages.contains(lang)) Config.lang = lang;
-        else Config.lang = "en";
+        if(languages.contains(lang)) Config.defaultLanguage = lang;
+        else {
+            LOG.error("Default language (" + lang + ") must be in the list with other languages and defined correctly!");
+            Config.defaultLanguage = "en";
+        }
 
         for(final String key : languages){
             //create new file for storing languages keys
@@ -91,7 +96,7 @@ public class Config {
         LANGUAGES.addAll(languages);
         LOG.debug("Loaded '" + LANGUAGES.toString().substring(1, LANGUAGES.toString().length() - 1) + "' languages.");
 
-        Config.prefix = getMessage(Config.lang, MessageType.PREFIX);
+        Config.prefix = getMessage(Config.defaultLanguage, MessageType.PREFIX);
     }
 
     /**
@@ -163,7 +168,7 @@ public class Config {
      * does not exist
      */
     public static @NotNull String getMessage(String lang, final @NotNull MessageType message, final String... variables) {
-        if (lang == null) lang = getLanguage();
+        if (lang == null) lang = getDefaultLanguage();
 
         String result = messages.getString(lang + "." + message.path);
         if (result == null || result.equals("")) {
@@ -230,7 +235,7 @@ public class Config {
     public static void sendMessage(final Player player, String lang, final @NotNull MessageType msg, final ConfigSound sound, final String... variables) {
         if (player == null) return;
 
-        if(lang == null || !getLanguages().contains(lang)) lang = getLanguage();
+        if(lang == null || !getLanguages().contains(lang)) lang = getDefaultLanguage();
 
         player.sendMessage(parseText(player, getMessage(lang, msg, variables)));
         if (sound != null) playSound(player, sound);
@@ -253,10 +258,14 @@ public class Config {
      * @return The parsed message as Kyori {@link TextComponent}
      */
     public static @NotNull TextComponent parseText(final @NotNull Player player, final @NotNull String msg) {
-        if(!Compatibility.getHooked().contains(CompatiblePlugin.PLACEHOLDERAPI)) {
-            final PlaceholderManager placeholderManager = plugin.getPlaceholderManager();
-            return placeholderManager.translate(player, msg);
+        if(!Compatibility.getHooked().contains(PLACEHOLDERAPI)) {
+            if(PlaceholderManager.hasPlaceholder(msg)) {
+                final PlaceholderManager placeholderManager = plugin.getPlaceholderManager();
+                return placeholderManager.translate(player, msg);
+            } else
+                return parseText(msg);
         }
+
         return ColorCodes.translateToTextComponent(PlaceholderAPI.setPlaceholders(player, prefix + msg));
     }
 
@@ -297,17 +306,17 @@ public class Config {
         return messages;
     }
 
-    public static void setLanguage(String lang) throws IllegalArgumentException {
+    public static void setDefaultLanguage(final String lang) throws IllegalArgumentException {
         if (LANGUAGES.contains(lang)) {
-            Config.lang = lang;
-        } else throw new IllegalArgumentException();
+            Config.defaultLanguage = lang;
+        } else throw new IllegalArgumentException("New default language must be in the list of available ones!");
     }
 
     /**
      * @return the default language
      */
-    public static String getLanguage() {
-        return Config.lang;
+    public static String getDefaultLanguage() {
+        return Config.defaultLanguage;
     }
 
     /**
