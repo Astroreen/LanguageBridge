@@ -5,10 +5,9 @@ import me.astroreen.astrolibs.api.bukkit.command.SimpleTabCompleter;
 import me.astroreen.astrolibs.api.config.ConfigurationFile;
 import me.astroreen.astrolibs.module.logger.DebugHandlerConfig;
 import me.astroreen.languagebridge.LanguageBridge;
-import me.astroreen.languagebridge.config.MessageType;
 import me.astroreen.languagebridge.config.Config;
+import me.astroreen.languagebridge.config.MessageType;
 import me.astroreen.languagebridge.permissions.Permission;
-import me.astroreen.languagebridge.permissions.PermissionManager;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -21,14 +20,12 @@ import java.util.*;
 @CustomLog
 public class LanguageBridgeCommand implements CommandExecutor, SimpleTabCompleter {
 
-    //todo: translate commands and their outputs
     //todo: make help command and hints for usage
 
-    private static final LanguageBridge instance = LanguageBridge.getInstance();
-    private static final PermissionManager permManager = LanguageBridge.getInstance().getPermissionManager();
+    private static final LanguageBridge plugin = LanguageBridge.getInstance();
 
     public LanguageBridgeCommand() {
-        final PluginCommand command = instance.getCommand("languagebridge");
+        final PluginCommand command = plugin.getCommand("languagebridge");
         if (command != null) {
             command.setExecutor(this);
             command.setTabCompleter(this);
@@ -37,29 +34,30 @@ public class LanguageBridgeCommand implements CommandExecutor, SimpleTabComplete
 
     @Override
     public boolean onCommand(final @NotNull CommandSender sender, final @NotNull Command cmd, final @NotNull String label, final @NotNull String[] args) {
-        if ("languagebridge".equalsIgnoreCase(cmd.getName())) {
-            LOG.debug("Executing /" + cmd.getName() + " command for user " + sender.getName()
-                    + " with arguments: " + Arrays.toString(args));
-            // if the command is empty, display help message
-            if (args.length == 0) return true;
-
-            switch (args[0].toLowerCase()) {
-                case "default-language","language", "lang", "l" -> handleLanguage(sender, args);
-                case "version", "ver", "v" ->
-                        Config.sendMessage(sender, MessageType.PLUGIN_VERSION, instance.getPluginMeta().getVersion());
-                case "debug", "d" -> handleDebug(sender, args);
-                case "reload", "rl", "r" -> {
-                    if (Config.noPermission(sender, Permission.RELOAD)) return false;
-                    //just reloading
-                    instance.reload();
-                    Config.sendMessage(sender, MessageType.RELOAD);
-                }
-                default -> Config.sendMessage(sender, MessageType.UNKNOWN_ARGUMENTS, args[0]);
-            }
-            LOG.debug("Command executing done");
-            return true;
+        if (!"languagebridge".equalsIgnoreCase(cmd.getName())) {
+            return false;
         }
-        return false;
+
+        LOG.debug("Executing /" + cmd.getName() + " command for user " + sender.getName()
+                + " with arguments: " + Arrays.toString(args));
+        // if the command is empty, display help message
+        if (args.length == 0) return true;
+
+        switch (args[0].toLowerCase()) {
+            case "default-language","language", "lang", "l" -> handleLanguage(sender, args);
+            case "version", "ver", "v" ->
+                    Config.sendMessage(sender, MessageType.PLUGIN_VERSION, plugin.getPluginMeta().getVersion());
+            case "debug", "d" -> handleDebug(sender, args);
+            case "reload", "rl", "r" -> {
+                if (Config.noPermission(sender, Permission.RELOAD)) return false;
+                //just reloading
+                plugin.reload();
+                Config.sendMessage(sender, MessageType.RELOAD);
+            }
+            default -> Config.sendMessage(sender, MessageType.UNKNOWN_ARGUMENTS, args[0]);
+        }
+        LOG.debug("Command executing done");
+        return true;
     }
 
     @Override
@@ -83,7 +81,7 @@ public class LanguageBridgeCommand implements CommandExecutor, SimpleTabComplete
         }
 
 
-        if(!Config.getLanguages().contains(args[1])) {
+        if(!Config.getStoredLanguages().contains(args[1])) {
             Config.sendMessage(sender, MessageType.NO_SUCH_LANGUAGE, args[1]);
             return;
         }
@@ -101,7 +99,7 @@ public class LanguageBridgeCommand implements CommandExecutor, SimpleTabComplete
                 Config.sendMessage(sender, MessageType.NO_SUCH_LANGUAGE);
                 return;
             }
-            final ConfigurationFile config = instance.getPluginConfig();
+            final ConfigurationFile config = plugin.getPluginConfig();
             config.set("settings.default-language", args[1]);
             try {
                 config.save();
@@ -116,7 +114,7 @@ public class LanguageBridgeCommand implements CommandExecutor, SimpleTabComplete
 
     private @NotNull Optional<List<String>> completeLanguage(final String @NotNull ... args) {
         if (args.length == 2) {
-            return Optional.of(Config.getLanguages().stream().toList());
+            return Optional.of(Config.getStoredLanguages().stream().toList());
         }
         return Optional.of(Collections.emptyList());
     }

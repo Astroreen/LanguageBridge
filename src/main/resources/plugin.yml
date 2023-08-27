@@ -5,6 +5,7 @@ main: me.astroreen.languagebridge.LanguageBridge
 api-version: '1.20'
 depend:
   - AstroLibs
+  - ProtocolLib
 softdepend:
   - LuckPerms
   - PlaceholderAPI
@@ -19,3 +20,9 @@ commands:
       - lngbr
       - lngbr
       - lnbr
+  language:
+    description: Command to choose your language
+    permission: languagebridge.command.language
+    aliases:
+      - lang
+      - lng

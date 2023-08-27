@@ -6,9 +6,12 @@ import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Optional;
+
 public class BRPlaceholder extends PlaceholderExpansion {
 
     private final LanguageBridge plugin = LanguageBridge.getInstance();
+    private final PlaceholderManager manager = plugin.getPlaceholderManager();
 
     /**
      * Persist through reloads
@@ -67,10 +70,11 @@ public class BRPlaceholder extends PlaceholderExpansion {
      * @param params A Placeholder.
      * @return possibly-null String of the requested params.
      */
-    //todo: parse placeholders using PlaceholderManager
     @Override
     public String onRequest(final OfflinePlayer player, final @NotNull String params) {
         if(player == null) return "";
-        return "";
+        if(!params.contains(".")) return ""; // means params do not contain key
+        final Optional<String> value = manager.getValueFromKey(player.getUniqueId(), params);
+        return value.orElse("");
     }
 }

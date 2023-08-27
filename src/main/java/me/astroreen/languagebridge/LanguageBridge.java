@@ -1,27 +1,30 @@
 package me.astroreen.languagebridge;
 
 import lombok.Getter;
-import me.astroreen.astrolibs.api.config.ConfigurationFile;
-import me.astroreen.astrolibs.api.logger.Logger;
-import me.astroreen.astrolibs.api.logger.LoggerFactory;
 import me.astroreen.astrolibs.api.compatibility.Compatibility;
 import me.astroreen.astrolibs.api.compatibility.CompatiblePlugin;
 import me.astroreen.astrolibs.api.compatibility.Integrator;
+import me.astroreen.astrolibs.api.config.ConfigurationFile;
 import me.astroreen.astrolibs.api.listener.Listener;
 import me.astroreen.astrolibs.api.listener.ListenerManager;
+import me.astroreen.astrolibs.api.logger.Logger;
+import me.astroreen.astrolibs.api.logger.LoggerFactory;
 import me.astroreen.astrolibs.module.logger.DebugHandlerConfig;
 import me.astroreen.languagebridge.commands.LanguageBridgeCommand;
+import me.astroreen.languagebridge.commands.LanguageCommand;
 import me.astroreen.languagebridge.compatibility.luckperms.BRLuckPermsIntegrator;
 import me.astroreen.languagebridge.compatibility.luckperms.LPPermissionManager;
 import me.astroreen.languagebridge.compatibility.placeholderapi.PlaceholderAPIIntegrator;
 import me.astroreen.languagebridge.config.Config;
 import me.astroreen.languagebridge.database.*;
+import me.astroreen.languagebridge.listener.onPlayerEditBookEventListener;
 import me.astroreen.languagebridge.listener.onPlayerJoinEventListener;
 import me.astroreen.languagebridge.listener.onPrepareAnvilEventListener;
 import me.astroreen.languagebridge.permissions.DefaultPermissionManager;
 import me.astroreen.languagebridge.permissions.Permission;
 import me.astroreen.languagebridge.permissions.PermissionManager;
 import org.bukkit.Bukkit;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.event.EventPriority;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -30,7 +33,6 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -102,8 +104,10 @@ public final class LanguageBridge extends JavaPlugin {
         LanguageBridge.eventPriority = reloadEventPriority();
 
         // Initialize
+        //todo: replace values on language switch (maybe use protocollib or nms instead of regular minecraft events?)
         //todo: create listeners to translate native placeholders
-        //for books, anvils, chat, nicknames(tags), boss bar, tab list, titles
+        //for chat, nicknames(tags), boss bar, tab list, titles, inventory titles, holograms, NPC names, kick/ban messages
+        //done: anvils, books
         ListenerManager.setup(this, getListeners(), log);                         //listeners
         new Compatibility(this, getIntegrators(), config, log);                   //compatibility with other plugins
         Config.setup(this);                                                             //messages
@@ -112,7 +116,7 @@ public final class LanguageBridge extends JavaPlugin {
                 LPPermissionManager.getInstance() : new DefaultPermissionManager();
         placeholderManager = new PlaceholderManager(this);                        //placeholder manager
         new LanguageBridgeCommand();                                                    //commands
-        //todo: make command to select different language (f.e. /language)
+        new LanguageCommand();
 
         // create tables in the database
         database.createTables(isMySQLUsed);
@@ -131,11 +135,7 @@ public final class LanguageBridge extends JavaPlugin {
         //refreshing db connection
         final long updateTime = 30 * 1200; //minutes
         final Runnable runnable = () -> {
-            try {
-                database.getConnection().prepareStatement("SELECT 1").executeQuery().close();
-            } catch (final SQLException e) {
-                log.error("Could not refresh the database! Is connection lost?", e);
-            }
+            new Connector(database).refresh();
         };
         Bukkit.getScheduler().runTaskTimerAsynchronously(this, runnable, updateTime, updateTime);
     }
@@ -143,11 +143,13 @@ public final class LanguageBridge extends JavaPlugin {
     public void reload() {
         // reload the configuration
         log.debug("Reloading configuration");
+
         try {
             config.reload();
         } catch (final IOException e) {
             log.warn("Could not reload config! " + e.getMessage(), e);
         }
+
         Config.setup(this);
         ListenerManager.setup(this, getListeners(), log);
         onPlayerJoinEventListener.reload();
@@ -228,10 +230,24 @@ public final class LanguageBridge extends JavaPlugin {
         final Set<Listener> listeners = new HashSet<>();
 
         try {
+            //listeners active by default
             Stream.of(
-                    new onPrepareAnvilEventListener(this),
                     new onPlayerJoinEventListener(this)
             ).forEach(listeners::add);
+
+            final ConfigurationSection section = config.getConfigurationSection("settings.check-placeholder-on");
+            if (section == null) {
+                log.warn("Could not register conditional listeners!");
+                return listeners;
+            }
+
+            //conditional listeners
+            if (section.getBoolean("rename-item-on-anvil-event", true))
+                listeners.add(new onPrepareAnvilEventListener(this));
+
+            if (section.getBoolean("edit-book-event", true))
+                listeners.add(new onPlayerEditBookEventListener(this));
+
         } catch (NoSuchMethodException e) {
             log.error("Could not register listeners!", e);
         }

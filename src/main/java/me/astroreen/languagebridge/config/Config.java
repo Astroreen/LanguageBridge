@@ -1,17 +1,19 @@
 package me.astroreen.languagebridge.config;
 
+import lombok.CustomLog;
+import me.astroreen.astrolibs.api.compatibility.Compatibility;
 import me.astroreen.astrolibs.api.config.ConfigAccessor;
 import me.astroreen.astrolibs.api.config.ConfigurationFile;
-import me.astroreen.astrolibs.api.compatibility.Compatibility;
 import me.astroreen.astrolibs.utils.ColorCodes;
 import me.astroreen.languagebridge.LanguageBridge;
 import me.astroreen.languagebridge.PlaceholderManager;
-import lombok.CustomLog;
 import me.astroreen.languagebridge.database.Connector;
 import me.astroreen.languagebridge.database.QueryType;
+import me.astroreen.languagebridge.database.UpdateType;
 import me.astroreen.languagebridge.permissions.Permission;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.kyori.adventure.text.TextComponent;
+import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -26,18 +28,20 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
-import static me.astroreen.astrolibs.api.compatibility.CompatiblePlugin.*;
+import static me.astroreen.astrolibs.api.compatibility.CompatiblePlugin.PLACEHOLDERAPI;
 
-//todo: get prefix based on player language
 @CustomLog
 public class Config {
     private static final Set<String> LANGUAGES = new HashSet<>();
+    private static final Map<UUID, String> storedLanguages = new HashMap<>();
+    private static final Map<String, String> storedPrefixes = new HashMap<>();
     private static LanguageBridge plugin;
     private static ConfigurationFile messages = null;
     private static ConfigAccessor internal = null;
     private static String defaultLanguage = null;
-    private static String prefix = "";
     private static Connector connector;
+    private static boolean storeValues = false;
+    private static int updateTime = 0;
 
     private Config() {
     }
@@ -46,6 +50,8 @@ public class Config {
         Config.plugin = plugin;
         Config.connector = new Connector(plugin.getDatabase());
         Config.LANGUAGES.clear();
+        Config.storedLanguages.clear();
+        Config.storedPrefixes.clear();
 
         final File root = plugin.getDataFolder();
         try {
@@ -57,6 +63,9 @@ public class Config {
         }
 
         final ConfigurationFile config = plugin.getPluginConfig();
+        Config.updateTime = config.getInt("settings.store-requested-values", 0) * 1200; //minutes
+        Config.storeValues = updateTime > 0;
+
         final String lang = config.getString("settings.default-language");
         final List<String> languages = config.getStringList("settings.languages");
 
@@ -82,6 +91,7 @@ public class Config {
                 } catch (final IOException e) {
                     throw new InvalidConfigurationException("Default values were applied to the config but could not be saved! Reason: " + e.getMessage(), e);
                 }
+
             } catch (InvalidConfigurationException | FileNotFoundException e) {
                 LOG.error(e.getMessage(), e);
             }
@@ -98,10 +108,16 @@ public class Config {
             }
         }
 
+        //saving prefixes
+        if (storeValues) {
+            for (final String key : messages.getKeys(false)) {
+                final String prefix = messages.getString(key + ".prefix");
+                if (prefix != null) storedPrefixes.put(key, prefix);
+            }
+        }
+
         LANGUAGES.addAll(languages);
         LOG.debug("Loaded '" + LANGUAGES.toString().substring(1, LANGUAGES.toString().length() - 1) + "' languages.");
-
-        Config.prefix = getMessage(Config.defaultLanguage, MessageType.PREFIX);
     }
 
     /**
@@ -111,15 +127,37 @@ public class Config {
      * @return language optional
      */
     public static @NotNull Optional<String> getPlayerLanguage(final UUID uuid) {
+
+        if (storedLanguages.containsKey(uuid)) return Optional.ofNullable(storedLanguages.get(uuid));
+
         try (
                 final ResultSet rs = connector.querySQL(QueryType.SELECT_PLAYER_LANGUAGE, String.valueOf(uuid))
         ) {
             rs.next();
-            return Optional.ofNullable(rs.getString("language"));
+            final Optional<String> language = Optional.ofNullable(rs.getString("language"));
+            if (storeValues && language.isPresent()) {
+                if (!LANGUAGES.contains(language.get())) return Optional.empty();
+                storedLanguages.put(uuid, language.get());
+                Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> storedLanguages.remove(uuid), updateTime);
+            }
+            return language;
         } catch (SQLException e) {
             LOG.error("There was an exception with SQL", e);
             return Optional.empty();
         }
+    }
+
+    /**
+     * Sets player a new language.
+     *
+     * @param uuid     the player's uuid
+     * @param language new language to set
+     */
+    public static void setPlayerLanguage(final UUID uuid, final String language) {
+        if (!LANGUAGES.contains(language)) return;
+
+        if (storeValues) storedLanguages.put(uuid, language);
+        connector.updateSQL(UpdateType.UPDATE_PLAYER_LANGUAGE, language, String.valueOf(uuid));
     }
 
     /**
@@ -172,7 +210,7 @@ public class Config {
      * Retrieves the message from the configuration in specified language
      *
      * @param message color of the message to retrieve
-     * @param uuid  the uuid of a player to get language from, in which the message should be retrieved
+     * @param uuid    the uuid of a player to get language from, in which the message should be retrieved
      * @return message in that language, or message in English, or null if it
      * does not exist
      */
@@ -227,6 +265,15 @@ public class Config {
             }
         }
         return result;
+    }
+
+    public static @NotNull Optional<String> getPrefix(String language) {
+        if (!LANGUAGES.contains(language)) language = getDefaultLanguage();
+
+        if (storeValues && storedPrefixes.containsKey(language))
+            return Optional.ofNullable(storedPrefixes.get(language));
+
+        return Optional.ofNullable(messages.getString(language + ".prefix"));
     }
 
     /**
@@ -295,17 +342,18 @@ public class Config {
      * @param variables array of variables which will be inserted into the message
      * @param sound     color of the sound to play to the player
      */
-    public static void sendMessage(final Player player, String lang, final @NotNull MessageType msg, final ConfigSound sound, final String... variables) {
+    public static void sendMessage(final Player player, String lang, final @NotNull MessageType msg, final SoundType sound, final String... variables) {
         if (player == null) {
             LOG.error("In order to send messages, player must be defined!");
             return;
         }
 
-        if (lang == null || !getLanguages().contains(lang)) {
+        if (lang == null || !getStoredLanguages().contains(lang)) {
             lang = getPlayerLanguage(player.getUniqueId()).orElse(getDefaultLanguage());
         }
 
-        player.sendMessage(parseText(player, getMessage(lang, msg, variables)));
+        final String prefix = getPrefix(lang).orElse("");
+        player.sendMessage(parseText(player, prefix + getMessage(lang, msg, variables)));
         if (sound != null) playSound(player, sound);
     }
 
@@ -346,7 +394,7 @@ public class Config {
      * @return The parsed message as Kyori {@link TextComponent}
      */
     public static @NotNull TextComponent parseText(final @NotNull String msg) {
-        return ColorCodes.translateToTextComponent(prefix + msg);
+        return ColorCodes.translateToTextComponent(msg);
     }
 
     /**
@@ -364,37 +412,36 @@ public class Config {
                 return parseText(msg);
         }
 
-        return ColorCodes.translateToTextComponent(PlaceholderAPI.setPlaceholders(player, prefix + msg));
+        return ColorCodes.translateToTextComponent(PlaceholderAPI.setPlaceholders(player, msg));
     }
 
     /**
      * Plays a sound specified in the plugin's config to the player
      *
      * @param player    the uuid of the player
-     * @param soundType the color of the sound to play to the player
-     * @throws IllegalArgumentException if sound color was not found
+     * @param soundType the sound to play to the player
      */
-    public static void playSound(final Player player, final @NotNull ConfigSound soundType)
-            throws IllegalArgumentException {
+    public static void playSound(final Player player, final @NotNull SoundType soundType) {
         if (player == null) {
             return;
         }
         final String rawSound = plugin.getPluginConfig().getString(soundType.path);
-        if (rawSound == null) {
+        if (rawSound == null || rawSound.equalsIgnoreCase("empty")) {
             return;
         }
+
         final String[] sound = rawSound.split(" ", 3);
         if (sound.length != 3) {
-            LOG.error("Sound in the config used wrong: " + rawSound);
+            LOG.warn("Sound in the config must be defined correctly! (" + rawSound + ")");
             return;
         }
-        if (!sound[0].equalsIgnoreCase("false")) {
-            try {
-                player.playSound(player.getLocation(), Sound.valueOf(sound[0]), Float.parseFloat(sound[1]), Float.parseFloat(sound[2]));
-            } catch (final IllegalArgumentException e) {
-                LOG.warn("Unknown sound type: " + rawSound, e);
-            }
+
+        try {
+            player.playSound(player.getLocation(), Sound.valueOf(sound[0]), Float.parseFloat(sound[1]), Float.parseFloat(sound[2]));
+        } catch (final IllegalArgumentException e) {
+            LOG.warn("Sound in the config must be defined correctly! (" + rawSound + ")", e);
         }
+
     }
 
     /**
@@ -404,6 +451,12 @@ public class Config {
         return messages;
     }
 
+    /**
+     * Sets default language for player on join.
+     *
+     * @param lang the language
+     * @throws IllegalArgumentException throws if the language don't exist
+     */
     public static void setDefaultLanguage(final String lang) throws IllegalArgumentException {
         if (LANGUAGES.contains(lang)) {
             Config.defaultLanguage = lang;
@@ -420,17 +473,7 @@ public class Config {
     /**
      * @return the languages defined in plugin-messages.yml
      */
-    public static Set<String> getLanguages() {
+    public static Set<String> getStoredLanguages() {
         return LANGUAGES;
-    }
-
-    public enum ConfigSound {
-        PING("sounds.ping");
-
-        private final String path;
-
-        ConfigSound(String path) {
-            this.path = path;
-        }
     }
 }

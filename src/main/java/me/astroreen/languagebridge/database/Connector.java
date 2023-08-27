@@ -35,7 +35,7 @@ public class Connector {
         try {
             connection.prepareStatement("SELECT 1").executeQuery().close();
         } catch (final SQLException e) {
-            LOG.warn("Reconnecting to the database", e);
+            LOG.error("Could not refresh database connection. Reconnecting to the database...", e);
             database.closeConnection();
             connection = database.getConnection();
         }

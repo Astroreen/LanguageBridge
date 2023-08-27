@@ -17,7 +17,6 @@ import org.jetbrains.annotations.NotNull;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -87,7 +86,7 @@ public class onPlayerJoinEventListener extends EventListener {
 
         //check if player's language is valid
         Config.getPlayerLanguage(uuid).ifPresentOrElse(lang -> {
-            if(!Config.getLanguages().contains(lang))
+            if(!Config.getStoredLanguages().contains(lang))
                 connector.updateSQL(UpdateType.UPDATE_PLAYER_LANGUAGE, Config.getDefaultLanguage(), uuid.toString());
         }, () -> connector.updateSQL(UpdateType.UPDATE_PLAYER_LANGUAGE, Config.getDefaultLanguage(), uuid.toString()));
     }

@@ -5,7 +5,10 @@ import lombok.Getter;
 import me.astroreen.astrolibs.api.config.ConfigAccessor;
 import me.astroreen.astrolibs.api.config.ConfigurationFile;
 import me.astroreen.languagebridge.config.Config;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.TextReplacementConfig;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -16,21 +19,16 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-//todo: on reload check languages in config and in database, if language don't exist, replace it with default value from config
 @CustomLog
 public class PlaceholderManager {
     private static final String SYMBOL = "%";
     /**
      * Gets prefix that is used in placeholder pattern.
-     *
-     * @return prefix
      */
     @Getter
     private static final String PREFIX = "lngbr_";
     /**
      * Gets placeholder pattern.
-     *
-     * @return placeholder
      */
     @Getter
     private static final Pattern PATTERN = Pattern.compile(SYMBOL + PREFIX + ".*?" + SYMBOL, Pattern.CASE_INSENSITIVE);
@@ -39,7 +37,9 @@ public class PlaceholderManager {
     private final LanguageBridge plugin;
     //key, language, value
     private final Map<String, Map<String, String>> placeholders = new TreeMap<>();
+    private final Map<UUID, String> languages = new HashMap<>();
     private boolean storePlaceholders = false;
+
     public PlaceholderManager(final @NotNull LanguageBridge plugin) {
         this.plugin = plugin;
         reload(); // as setup
@@ -60,6 +60,50 @@ public class PlaceholderManager {
     /**
      * Translates all placeholders and colors in text.
      *
+     * @param player    the player for whom translating
+     * @param component the text component to translate
+     * @return {@link TextComponent}
+     */
+    public @NotNull Component translate(final Player player, Component component) {
+        if(component == null || player == null) return Component.empty();
+
+        final PlaceholderManager manager = plugin.getPlaceholderManager();
+        String text = PlainTextComponentSerializer.plainText().serialize(component);
+        boolean hasPlaceholder = PlaceholderManager.hasPlaceholder(text);
+
+        while(hasPlaceholder){
+            final Optional<String> placeholder = PlaceholderManager.getPlaceholderFromText(text);
+
+            //there's must be a placeholder, because we check it in while
+            if (placeholder.isEmpty()) {
+                continue;
+            }
+
+            final Optional<String> key = PlaceholderManager.getKeyFromPlaceholder(placeholder.get());
+            //check key
+            if(key.isEmpty() || !manager.isKeyExist(key.get())) return component;
+
+            //getting value of the placeholder
+            final TextComponent value = Config.parseText(player, manager
+                    .getValueFromKey(player.getUniqueId(), key.get())
+                    .orElse(placeholder.get()));
+
+            //getting name with replacement
+            component = component.replaceText(TextReplacementConfig.builder()
+                    .match(placeholder.get())
+                    .replacement(value)
+                    .build());
+
+            text = PlainTextComponentSerializer.plainText().serialize(component);
+            hasPlaceholder = PlaceholderManager.hasPlaceholder(text);
+        }
+
+        return component;
+    }
+
+    /**
+     * Translates all placeholders and colors in text.
+     *
      * @param player the player for whom translating
      * @param text   the text to translate
      * @return {@link TextComponent}
@@ -68,7 +112,6 @@ public class PlaceholderManager {
         //no placeholder
         if (!hasPlaceholder(text)) return Config.parseText(player, text);
 
-        //todo: create patterns for others placeholders values and add this as a method variable to dynamically get answer
         final Matcher matcher = PATTERN.matcher(text);
         final StringBuilder builder = new StringBuilder();
         while (matcher.find()) {
@@ -106,12 +149,12 @@ public class PlaceholderManager {
      */
     public @NotNull Optional<String> getValueFromKey(final String language, final String key) {
         //check if language is real
-        if (!Config.getLanguages().contains(language)) return Optional.empty();
+        if (!Config.getStoredLanguages().contains(language)) return Optional.empty();
         //check key
         if (key == null || key.isBlank()) return Optional.empty();
         if (!hasPlaceholder(SYMBOL + PREFIX + key + SYMBOL)) return Optional.empty();
 
-        if (storePlaceholders) {
+        if (storePlaceholders && placeholders.containsKey(key)) {
             final Map<String, String> options = placeholders.get(key);
             if (options != null) return Optional.ofNullable(options.get(language));
         }
@@ -131,7 +174,7 @@ public class PlaceholderManager {
     public void uploadPlaceholdersToMemory() {
         final Set<String> keys = new HashSet<>();
 
-        for (final String language : Config.getLanguages()) {
+        for (final String language : Config.getStoredLanguages()) {
             if (!isLanguageFileExist(language)) {
                 LOG.warn("Language file '" + language + FILE_SUFFIX + "' was not found!"
                         + " Keys from this file will not be uploaded to the memory.");
@@ -180,10 +223,10 @@ public class PlaceholderManager {
     /**
      * Checks if key exist.
      *
-     * @param key      key to check
+     * @param key key to check
      * @return true if exists, otherwise false
      */
-    public boolean isKeyExist(final String key){
+    public boolean isKeyExist(final String key) {
         return isKeyExist(Config.getDefaultLanguage(), key);
     }
 

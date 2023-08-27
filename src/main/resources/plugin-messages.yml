@@ -1,4 +1,4 @@
-config-version: ''
+config-version: 0.0.0-CONFIG-0 # Do not touch! Plugin will update this value automatically.
 en:
   prefix: ''
   version: '&#6ffc03Plugin version - &#a1ff59{0}.'
@@ -12,7 +12,7 @@ en:
     already-language: '&#f09c0bThe language is already set to "{0}".'
     no-such-language: '&#f09c0bNo such language ({0}) in file ''plugin-messages.yml''.'
     set-language-successfully: '&#6ffc03Language successfully set to "{0}"!'
-    set-language-error: '&d82625Failed to save new default language option to config file!'
+    set-language-error: '&d82625Failed to save new language option!'
   debug:
     current-debug: '&#6ffc03Debug mode {0}.'
     already-debugging: '&#f09c0bDebug mode is already {0}!'
@@ -34,8 +34,7 @@ ru:
     already-language: '&#f09c0bЯзык уже поставлен на "{0}".'
     no-such-language: '&#f09c0bЭтого языка ({0}) нет в файле plugin-messages.yml.'
     set-language-successfully: '&#6ffc03Язык успешно установлен на "{0}"!'
-    set-language-error: '&d82625Не удалось сохранить новый параметр языка по умолчанию
-      в файл конфигурации!'
+    set-language-error: '&d82625Не удалось сохранить новый параметр языка !'
   debug:
     current-debug: '&#6ffc03Debug режим, в данный момент, {0}.'
     already-debugging: '&#f09c0bDebug режим уже {0}!'

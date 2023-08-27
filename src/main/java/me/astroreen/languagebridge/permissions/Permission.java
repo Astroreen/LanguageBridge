@@ -9,12 +9,14 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 
 public enum Permission {
-        PLACEHOLDER_ANVIL("placeholder.anvil", "Permission to use placeholders in anvil", PermissionDefault.FALSE),
+        PLACEHOLDER_BOOK("placeholder.book", "Permission to use placeholders in books", PermissionDefault.FALSE),
+        PLACEHOLDER_ANVIL("placeholder.anvil", "Permission to use placeholders in anvils", PermissionDefault.FALSE),
     ALL_PLACEHOLDERS("placeholder.*",
             "General permission to write and use all placeholders", PermissionDefault.OP,
-            setChildren(PLACEHOLDER_ANVIL)),
+            setChildren(PLACEHOLDER_ANVIL, PLACEHOLDER_BOOK)),
+        LANGUAGE_COMMAND("command.language", "Permission for command to choose language", PermissionDefault.TRUE),
         MAIN_COMMAND("command.languagebridge", "Permission for main command", PermissionDefault.OP),
-    All_COMMANDS("command.*", PermissionDefault.OP, setChildren(MAIN_COMMAND)),
+    All_COMMANDS("command.*", PermissionDefault.OP, setChildren(MAIN_COMMAND, LANGUAGE_COMMAND)),
         CHANGE_DEFAULT_LANGUAGE(
                 "language.change.default",
                 "Permission to change language that sets automatically to newly joined players",
