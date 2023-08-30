@@ -1,8 +1,7 @@
 package me.astroreen.languagebridge;
 
 import lombok.CustomLog;
-import me.astroreen.languagebridge.LanguageBridge;
-import me.astroreen.languagebridge.version.VersionChecker;
+import me.astroreen.astrolibs.version.VersionChecker;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.command.ConsoleCommandSender;

@@ -17,9 +17,8 @@ import me.astroreen.languagebridge.compatibility.luckperms.LPPermissionManager;
 import me.astroreen.languagebridge.compatibility.placeholderapi.PlaceholderAPIIntegrator;
 import me.astroreen.languagebridge.config.Config;
 import me.astroreen.languagebridge.database.*;
-import me.astroreen.languagebridge.listener.onPlayerEditBookEventListener;
 import me.astroreen.languagebridge.listener.onPlayerJoinEventListener;
-import me.astroreen.languagebridge.listener.onPrepareAnvilEventListener;
+import me.astroreen.languagebridge.listener.onWindowItemsPacketListener;
 import me.astroreen.languagebridge.permissions.DefaultPermissionManager;
 import me.astroreen.languagebridge.permissions.Permission;
 import me.astroreen.languagebridge.permissions.PermissionManager;
@@ -235,18 +234,19 @@ public final class LanguageBridge extends JavaPlugin {
                     new onPlayerJoinEventListener(this)
             ).forEach(listeners::add);
 
-            final ConfigurationSection section = config.getConfigurationSection("settings.check-placeholder-on");
+            final ConfigurationSection section = config.getConfigurationSection("settings.replace-placeholder-on");
             if (section == null) {
                 log.warn("Could not register conditional listeners!");
                 return listeners;
             }
 
             //conditional listeners
-            if (section.getBoolean("rename-item-on-anvil-event", true))
-                listeners.add(new onPrepareAnvilEventListener(this));
 
-            if (section.getBoolean("edit-book-event", true))
-                listeners.add(new onPlayerEditBookEventListener(this));
+            if (section.getBoolean("load-inventory-event", true))
+                listeners.add(new onWindowItemsPacketListener(this));
+
+            /*if (section.getBoolean("edit-book-event", true))
+                listeners.add(new onPlayerEditBookEventListener(this));*/
 
         } catch (NoSuchMethodException e) {
             log.error("Could not register listeners!", e);

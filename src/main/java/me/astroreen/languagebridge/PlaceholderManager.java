@@ -64,7 +64,7 @@ public class PlaceholderManager {
      * @param component the text component to translate
      * @return {@link TextComponent}
      */
-    public @NotNull Component translate(final Player player, Component component) {
+    public @NotNull Component translateToComponent(final Player player, Component component) {
         if(component == null || player == null) return Component.empty();
 
         final PlaceholderManager manager = plugin.getPlaceholderManager();
@@ -84,11 +84,11 @@ public class PlaceholderManager {
             if(key.isEmpty() || !manager.isKeyExist(key.get())) return component;
 
             //getting value of the placeholder
-            final TextComponent value = Config.parseText(player, manager
+            final TextComponent value = Config.parseTextToComponent(player, manager
                     .getValueFromKey(player.getUniqueId(), key.get())
                     .orElse(placeholder.get()));
 
-            //getting name with replacement
+            //getting name with replacements
             component = component.replaceText(TextReplacementConfig.builder()
                     .match(placeholder.get())
                     .replacement(value)
@@ -108,7 +108,35 @@ public class PlaceholderManager {
      * @param text   the text to translate
      * @return {@link TextComponent}
      */
-    public TextComponent translate(final Player player, final String text) {
+    public TextComponent translateToComponent(final Player player, final String text) {
+        //no placeholder
+        if (!hasPlaceholder(text)) return Config.parseTextToComponent(player, text);
+
+        final Matcher matcher = PATTERN.matcher(text);
+        final StringBuilder builder = new StringBuilder();
+        while (matcher.find()) {
+            final String matchedText = matcher.group();
+            final Optional<String> language = Config.getPlayerLanguage(player.getUniqueId());
+
+            final Optional<String> value = getValueFromKey(
+                    language.orElseGet(() -> //get default value
+                            plugin.getPluginConfig().getString("settings.default-language", "en")),
+                    getKeyFromPlaceholder(matchedText).orElse(matchedText));
+
+            value.ifPresent(s -> matcher.appendReplacement(builder, s));
+            matcher.appendTail(builder);
+        }
+        return Config.parseTextToComponent(builder.toString());
+    }
+
+    /**
+     * Translates all placeholders and colors in text.
+     *
+     * @param player the player for whom translating
+     * @param text   the text to translate
+     * @return translated text
+     */
+    public String translate(final Player player, final String text) {
         //no placeholder
         if (!hasPlaceholder(text)) return Config.parseText(player, text);
 

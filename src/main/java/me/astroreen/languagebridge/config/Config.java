@@ -300,7 +300,7 @@ public class Config {
         if (sender instanceof Player player) {
             Config.sendMessage(player, msg, variables);
         } else {
-            sender.sendMessage(Config.parseText(Config.getMessage(msg, variables)));
+            sender.sendMessage(Config.parseTextToComponent(Config.getMessage(msg, variables)));
         }
     }
 
@@ -353,7 +353,7 @@ public class Config {
         }
 
         final String prefix = getPrefix(lang).orElse("");
-        player.sendMessage(parseText(player, prefix + getMessage(lang, msg, variables)));
+        player.sendMessage(parseTextToComponent(player, prefix + getMessage(lang, msg, variables)));
         if (sound != null) playSound(player, sound);
     }
 
@@ -393,7 +393,7 @@ public class Config {
      *
      * @return The parsed message as Kyori {@link TextComponent}
      */
-    public static @NotNull TextComponent parseText(final @NotNull String msg) {
+    public static @NotNull TextComponent parseTextToComponent(final @NotNull String msg) {
         return ColorCodes.translateToTextComponent(msg);
     }
 
@@ -403,7 +403,35 @@ public class Config {
      * @param player an {@link Player}
      * @return The parsed message as Kyori {@link TextComponent}
      */
-    public static @NotNull TextComponent parseText(final @NotNull Player player, final @NotNull String msg) {
+    public static @NotNull TextComponent parseTextToComponent(final @NotNull Player player, final @NotNull String msg) {
+        if (!Compatibility.getHooked().contains(PLACEHOLDERAPI)) {
+            if (PlaceholderManager.hasPlaceholder(msg)) {
+                final PlaceholderManager placeholderManager = plugin.getPlaceholderManager();
+                return placeholderManager.translateToComponent(player, msg);
+            } else
+                return parseTextToComponent(msg);
+        }
+
+        return ColorCodes.translateToTextComponent(PlaceholderAPI.setPlaceholders(player, msg));
+    }
+
+    /**
+     * Retrieve's a message, replacing variables.
+     * Placeholders will not be replaced, because there's no player data.
+     *
+     * @return The parsed message as Kyori {@link TextComponent}
+     */
+    public static @NotNull String parseText(final @NotNull String msg) {
+        return ColorCodes.translate(msg);
+    }
+
+    /**
+     * Retrieve's a message, replacing variables.
+     *
+     * @param player an {@link Player}
+     * @return The parsed message as Kyori {@link TextComponent}
+     */
+    public static @NotNull String parseText(final @NotNull Player player, final @NotNull String msg) {
         if (!Compatibility.getHooked().contains(PLACEHOLDERAPI)) {
             if (PlaceholderManager.hasPlaceholder(msg)) {
                 final PlaceholderManager placeholderManager = plugin.getPlaceholderManager();
@@ -412,7 +440,7 @@ public class Config {
                 return parseText(msg);
         }
 
-        return ColorCodes.translateToTextComponent(PlaceholderAPI.setPlaceholders(player, msg));
+        return ColorCodes.translate(PlaceholderAPI.setPlaceholders(player, msg));
     }
 
     /**

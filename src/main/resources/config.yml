@@ -23,8 +23,8 @@ settings:
   #
   #Available options: LOWEST, LOW, NORMAL, HIGH, HIGHEST.
   event-priority: LOWEST
-  check-placeholder-on:
-    rename-item-on-anvil-event: true
+  replace-placeholder-on:
+    load-inventory-event: true
     edit-book-event: true
 
 #MySQL. If the connection data is entered incorrectly,
