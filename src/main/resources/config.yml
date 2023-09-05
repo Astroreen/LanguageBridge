@@ -25,6 +25,7 @@ settings:
   event-priority: LOWEST
   replace-placeholder-on:
     load-inventory-event: true
+    entity-spawn-event: true
     edit-book-event: true
 
 #MySQL. If the connection data is entered incorrectly,

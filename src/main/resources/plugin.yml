@@ -11,6 +11,20 @@ softdepend:
   - PlaceholderAPI
 
 commands:
+  languagebridgetest:
+    description: Command for plugin tests
+    aliases:
+      - languagebrtest
+      - lngbridgetest
+      - lngbrtest
+      - lngbrtest
+      - lnbrtest
+      - languagebrt
+      - lngbridget
+      - lngbrt
+      - lngbrt
+      - lnbrt
+      - test
   languagebridge:
     description: Main command
     permission: languagebridge.command.languagebridge

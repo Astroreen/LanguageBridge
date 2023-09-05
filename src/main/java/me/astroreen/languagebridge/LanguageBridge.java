@@ -11,12 +11,14 @@ import me.astroreen.astrolibs.api.logger.Logger;
 import me.astroreen.astrolibs.api.logger.LoggerFactory;
 import me.astroreen.astrolibs.module.logger.DebugHandlerConfig;
 import me.astroreen.languagebridge.commands.LanguageBridgeCommand;
+import me.astroreen.languagebridge.commands.LanguageBridgeTestCommand;
 import me.astroreen.languagebridge.commands.LanguageCommand;
 import me.astroreen.languagebridge.compatibility.luckperms.BRLuckPermsIntegrator;
 import me.astroreen.languagebridge.compatibility.luckperms.LPPermissionManager;
 import me.astroreen.languagebridge.compatibility.placeholderapi.PlaceholderAPIIntegrator;
 import me.astroreen.languagebridge.config.Config;
 import me.astroreen.languagebridge.database.*;
+import me.astroreen.languagebridge.listener.onEntitySpawn;
 import me.astroreen.languagebridge.listener.onPlayerJoinEventListener;
 import me.astroreen.languagebridge.listener.onWindowItemsPacketListener;
 import me.astroreen.languagebridge.permissions.DefaultPermissionManager;
@@ -115,6 +117,7 @@ public final class LanguageBridge extends JavaPlugin {
                 LPPermissionManager.getInstance() : new DefaultPermissionManager();
         placeholderManager = new PlaceholderManager(this);                        //placeholder manager
         new LanguageBridgeCommand();                                                    //commands
+        new LanguageBridgeTestCommand();
         new LanguageCommand();
 
         // create tables in the database
@@ -244,6 +247,9 @@ public final class LanguageBridge extends JavaPlugin {
 
             if (section.getBoolean("load-inventory-event", true))
                 listeners.add(new onWindowItemsPacketListener(this));
+
+            if(section.getBoolean("entity-spawn-event", true))
+                listeners.add(new onEntitySpawn(this));
 
             /*if (section.getBoolean("edit-book-event", true))
                 listeners.add(new onPlayerEditBookEventListener(this));*/

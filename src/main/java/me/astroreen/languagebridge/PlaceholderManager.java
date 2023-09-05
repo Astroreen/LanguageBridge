@@ -65,7 +65,7 @@ public class PlaceholderManager {
      * @return {@link TextComponent}
      */
     public @NotNull Component translateToComponent(final Player player, Component component) {
-        if(component == null || player == null) return Component.empty();
+        if(player == null || component == null) return Component.empty();
 
         final PlaceholderManager manager = plugin.getPlaceholderManager();
         String text = PlainTextComponentSerializer.plainText().serialize(component);
