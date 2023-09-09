@@ -1,10 +1,9 @@
 package me.astroreen.languagebridge.commands;
 
 import lombok.CustomLog;
-import me.astroreen.astrolibs.api.bukkit.command.CommandArgumentNode;
-import me.astroreen.astrolibs.api.bukkit.command.CommandArguments;
+import me.astroreen.astrolibs.api.bukkit.command.CommandTreeNode;
 import me.astroreen.astrolibs.api.bukkit.command.SimpleCommand;
-import me.astroreen.astrolibs.api.config.ConfigurationFile;
+import me.astroreen.astrolibs.api.bukkit.config.ConfigurationFile;
 import me.astroreen.astrolibs.module.logger.DebugHandlerConfig;
 import me.astroreen.languagebridge.LanguageBridge;
 import me.astroreen.languagebridge.config.Config;
@@ -27,59 +26,57 @@ public class LanguageBridgeCommand extends SimpleCommand {
     }
 
     @Override
-    public CommandArguments setupArguments(@NotNull CommandArguments commandArguments) {
-        final CommandArgumentNode root = commandArguments.getRoot();
+    public void prepare() {
+        final CommandTreeNode root = getRoot();
 
-        final CommandArgumentNode language = root.addArgument("default-language");
-        Config.getStoredLanguages().forEach(language::addArgument);
+        root
+                .addArgument("default-language")
+                .addArguments(Config.getStoredLanguages());
 
-        final CommandArgumentNode debug = root.addArgument("debug");
+
+        final CommandTreeNode debug = root.addArgument("debug");
         debug.addArgument("enable");
         debug.addArgument("disable");
 
         root.addArgument("version");
         root.addArgument("reload");
 
-        return commandArguments;
-    }
 
-    @Override
-    public void execute() {
         onArgumentSequence("default-language", (sender, args) -> {
 
             Config.sendMessage(sender, MessageType.CURRENT_LANGUAGE, Config.getDefaultLanguage());
             return true;
         });
 
-        for (final String lang : Config.getStoredLanguages()) {
-            onArgumentSequence("default-language " + lang, (sender, args) -> {
 
-                if (Config.noPermission(sender, Permission.CHANGE_DEFAULT_LANGUAGE)) return true;
-                final String language = Config.getDefaultLanguage();
+        onArgumentSequence("default-language " + Config.getStoredLanguages(), (sender, args) -> {
 
-                if (language.equalsIgnoreCase(args[1])) {
-                    Config.sendMessage(sender, MessageType.LANGUAGE_ALREADY_SET, language);
-                    return true;
-                }
+            if (Config.noPermission(sender, Permission.CHANGE_DEFAULT_LANGUAGE)) return true;
+            final String defaultLanguage = Config.getDefaultLanguage();
 
-                try {
-                    Config.setDefaultLanguage(args[1]);
-                } catch (final IllegalArgumentException e) {
-                    Config.sendMessage(sender, MessageType.NO_SUCH_LANGUAGE);
-                    return true;
-                }
-                final ConfigurationFile config = plugin.getPluginConfig();
-                config.set("settings.default-language", args[1]);
-                try {
-                    config.save();
-                } catch (IOException e) {
-                    LOG.warn("Failed to save new default language option to config file!", e);
-                }
-                Config.sendMessage(sender, MessageType.LANGUAGE_SET, args[1]);
+            if (defaultLanguage.equalsIgnoreCase(args[1])) {
+                Config.sendMessage(sender, MessageType.LANGUAGE_ALREADY_SET, defaultLanguage);
                 return true;
+            }
 
-            });
-        }
+            try {
+                Config.setDefaultLanguage(args[1]);
+            } catch (final IllegalArgumentException e) {
+                Config.sendMessage(sender, MessageType.NO_SUCH_LANGUAGE);
+                return true;
+            }
+            final ConfigurationFile config = plugin.getPluginConfig();
+            config.set("settings.default-defaultLanguage", args[1]);
+            try {
+                config.save();
+            } catch (IOException e) {
+                LOG.warn("Failed to save new default defaultLanguage option to config file!", e);
+            }
+            Config.sendMessage(sender, MessageType.LANGUAGE_SET, args[1]);
+            return true;
+
+        });
+
 
         onArgumentSequence("version", (sender, args) -> {
             Config.sendMessage(sender, MessageType.PLUGIN_VERSION, plugin.getPluginMeta().getVersion());

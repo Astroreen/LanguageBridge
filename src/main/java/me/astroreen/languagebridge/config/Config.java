@@ -1,9 +1,9 @@
 package me.astroreen.languagebridge.config;
 
 import lombok.CustomLog;
-import me.astroreen.astrolibs.api.compatibility.Compatibility;
-import me.astroreen.astrolibs.api.config.ConfigAccessor;
-import me.astroreen.astrolibs.api.config.ConfigurationFile;
+import me.astroreen.astrolibs.api.bukkit.compatibility.Compatibility;
+import me.astroreen.astrolibs.api.bukkit.config.ConfigAccessor;
+import me.astroreen.astrolibs.api.bukkit.config.ConfigurationFile;
 import me.astroreen.astrolibs.utils.ColorCodes;
 import me.astroreen.languagebridge.LanguageBridge;
 import me.astroreen.languagebridge.PlaceholderManager;
@@ -28,7 +28,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
-import static me.astroreen.astrolibs.api.compatibility.CompatiblePlugin.PLACEHOLDERAPI;
+import static me.astroreen.astrolibs.api.bukkit.compatibility.CompatiblePlugin.PLACEHOLDERAPI;
+
 
 @CustomLog
 public class Config {

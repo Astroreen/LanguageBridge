@@ -1,6 +1,6 @@
 package me.astroreen.languagebridge.compatibility.protocollib;
 
-import me.astroreen.astrolibs.api.compatibility.Integrator;
+import me.astroreen.astrolibs.api.bukkit.compatibility.Integrator;
 import me.astroreen.astrolibs.exception.HookException;
 
 public class BRProtocolLibIntegrator implements Integrator {

@@ -1,7 +1,7 @@
 package me.astroreen.languagebridge.listener;
 
 import lombok.CustomLog;
-import me.astroreen.astrolibs.api.listener.EventListener;
+import me.astroreen.astrolibs.api.bukkit.listener.EventListener;
 import me.astroreen.languagebridge.LanguageBridge;
 import me.astroreen.languagebridge.config.Config;
 import me.astroreen.languagebridge.database.Connector;

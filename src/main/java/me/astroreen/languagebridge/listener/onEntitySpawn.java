@@ -4,7 +4,7 @@ import com.comphenix.packetwrapper.WrapperPlayServerSpawnEntity;
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
-import me.astroreen.astrolibs.api.listener.PacketEventListener;
+import me.astroreen.astrolibs.api.bukkit.listener.PacketEventListener;
 import me.astroreen.languagebridge.LanguageBridge;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Entity;

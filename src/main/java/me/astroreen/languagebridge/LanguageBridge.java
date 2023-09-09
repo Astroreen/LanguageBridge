@@ -1,12 +1,12 @@
 package me.astroreen.languagebridge;
 
 import lombok.Getter;
-import me.astroreen.astrolibs.api.compatibility.Compatibility;
-import me.astroreen.astrolibs.api.compatibility.CompatiblePlugin;
-import me.astroreen.astrolibs.api.compatibility.Integrator;
-import me.astroreen.astrolibs.api.config.ConfigurationFile;
-import me.astroreen.astrolibs.api.listener.Listener;
-import me.astroreen.astrolibs.api.listener.ListenerManager;
+import me.astroreen.astrolibs.api.bukkit.compatibility.Compatibility;
+import me.astroreen.astrolibs.api.bukkit.compatibility.CompatiblePlugin;
+import me.astroreen.astrolibs.api.bukkit.compatibility.Integrator;
+import me.astroreen.astrolibs.api.bukkit.config.ConfigurationFile;
+import me.astroreen.astrolibs.api.bukkit.listener.Listener;
+import me.astroreen.astrolibs.api.bukkit.listener.ListenerManager;
 import me.astroreen.astrolibs.api.logger.Logger;
 import me.astroreen.astrolibs.api.logger.LoggerFactory;
 import me.astroreen.astrolibs.module.logger.DebugHandlerConfig;
@@ -105,10 +105,13 @@ public final class LanguageBridge extends JavaPlugin {
         LanguageBridge.eventPriority = reloadEventPriority();
 
         // Initialize
-        //todo: replace values on language switch (maybe use protocollib or nms instead of regular minecraft events?)
+
+        //todo: create ArmorStandManager to spawn armor stands on entities with packets and show to a limited group of player (to astrolibs)
+
+        //todo: replace values on language switch
         //todo: create listeners to translate native placeholders
-        //for chat, nicknames(tags), boss bar, tab list, titles, inventory titles, holograms, NPC names, kick/ban messages
-        //done: anvils, books
+        //for books, chat, boss bar, tab list, titles, inventory titles, holograms, NPC names, kick/ban messages
+        //done: anvils, nicknames(tags), items
         ListenerManager.setup(this, getListeners(), log);                         //listeners
         new Compatibility(this, getIntegrators(), config, log);                   //compatibility with other plugins
         Config.setup(this);                                                             //messages

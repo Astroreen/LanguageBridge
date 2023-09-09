@@ -1,9 +1,8 @@
 package me.astroreen.languagebridge.commands;
 
 import lombok.CustomLog;
-import me.astroreen.astrolibs.api.bukkit.command.CommandArgumentNode;
-import me.astroreen.astrolibs.api.bukkit.command.CommandArguments;
 import me.astroreen.astrolibs.api.bukkit.command.CommandFlag;
+import me.astroreen.astrolibs.api.bukkit.command.CommandTreeNode;
 import me.astroreen.astrolibs.api.bukkit.command.SimpleCommand;
 import me.astroreen.languagebridge.LanguageBridge;
 import me.astroreen.languagebridge.config.Config;
@@ -23,22 +22,20 @@ public class LanguageBridgeTestCommand extends SimpleCommand {
     }
 
     @Override
-    public CommandArguments setupArguments(final @NotNull CommandArguments arguments) {
-        final CommandArgumentNode root = arguments.getRoot();
+    public void prepare() {
 
-        final CommandArgumentNode name = root.addArgument("display-name", CommandFlag.ONLY_PLAYER);
+
+        final CommandTreeNode root = getRoot(); //todo: accept any argument or filter out of collection to get it later in command execution
+
+        final CommandTreeNode name = root.addArgument("display-name", CommandFlag.ONLY_PLAYER);
         name.addArgument("item");
         name.addArgument("entity");
 
-        return arguments;
-    }
 
-    @Override
-    public void execute() {
         onArgumentSequence("display-name item", (sender, args) -> {
 
-            final Component name = ((Player) sender).getInventory().getItemInMainHand().displayName();
-            sender.sendMessage(name);
+            final Component component = ((Player) sender).getInventory().getItemInMainHand().displayName();
+            sender.sendMessage(component);
             return true;
         });
 
@@ -47,10 +44,10 @@ public class LanguageBridgeTestCommand extends SimpleCommand {
             final Entity entity = ((Player) sender).getTargetEntity(24);
             if (entity == null) return true;
 
-            Component name = entity.customName();
-            if (name == null) name = entity.name();
+            Component component = entity.customName();
+            if (component == null) component = entity.name();
 
-            sender.sendMessage(name);
+            sender.sendMessage(component);
             return true;
         });
     }
